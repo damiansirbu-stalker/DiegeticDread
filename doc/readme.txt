@@ -25,11 +25,10 @@ It is a dread director, driven by where you stand and who is near. It answers th
 No random timers, no scripts. The soundscape follows the real state of the game around you.
 Some of its horror is interior audio Shrike made for Dark Signal and never released, given straight to this mod.
 
-DiegeticAmbience is its companion.
 DiegeticDread plays the horror and vetoes it from the base channels. DiegeticAmbience owns the living nature-and-weather bed it leaves alone.
 Run both and the Zone is real and frightening at once.
 
-Three parts.
+It works in three parts.
 A director reads the Zone and plays to it.
 A veto keeps it from doubling the base ambience.
 A measured pipeline builds the sound library.
@@ -58,8 +57,7 @@ Allies near are the only thing that calms you, so a place with your people falls
 Dread places a sound closer and fires it more often as it rises.
 It never changes the sound's own level, only how near it plays, and never so far that it falls silent.
 
-The palette.
-Sounds fall into categories, each playing only where it fits and only when its condition holds.
+The palette is a set of categories, each playing only where it fits and only when its condition holds.
 Spooks, screams, and dark drones play wherever the map allows.
 Mutant calls need a mutant present. Gunfire needs a person. The radio signal needs a signal source nearby.
 Wind, foliage, and eerie wildlife are outdoor texture. Doors, machinery, drips, and facility sound belong indoors and underground.
@@ -124,7 +122,7 @@ The director reads cheap signals every few seconds, never per frame, then caches
 
 
 MCM:
-Three tabs.
+The MCM has three tabs.
 Atmosphere holds one master volume for the mod's sounds plus rarity.
 That volume also balances the horror against your base ambience.
 The mod plays each sound at its author's loudness and never touches the base.
@@ -144,7 +142,7 @@ Compatibility:
 Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.
 Coexists:
 - Any soundscape pack (Soundscape Overhaul, Dark Signal, and the rest) - the veto strips DiegeticDread's own sounds from the base channels at load, so nothing doubles.
-- DiegeticAmbience - its companion: DiegeticDread plays the horror and vetoes it from the base, DiegeticAmbience owns the nature-and-weather bed.
+- DiegeticAmbience - DiegeticDread plays the horror and vetoes it from the base channels, DiegeticAmbience owns the nature-and-weather bed, and the two never double.
 It coexists with everything else.
 
 How It's Built:
