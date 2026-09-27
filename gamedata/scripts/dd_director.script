@@ -161,7 +161,7 @@ local _base = { chan = {}, idx = 0, tot = 0, hour = nil }
 local _cursor = 1
 
 -- Forward declarations for helpers referenced before their definition line (kept local, never global).
-local _build_hud, play_visual_pulse, try_visual_pulse
+local _build_hud, play_visual_pulse, try_visual_pulse, _build_detail
 
 --- Comma-join short strings into lines each <= width chars (the wrapped HUD available list).
 local function build_lines(items, width)
@@ -246,7 +246,7 @@ local function _load_meta(cats)
     for _, list in pairs(cats) do
         for i = 1, #list do
             local row = list[i]
-            rows[row.path] = { lufs = row.lufs, crest = row.crest, bv = row.bv, mn = row.mn, mx = row.mx }
+            rows[row.path] = { lufs = row.lufs, crest = row.crest, peak = row.peak, bv = row.bv, mn = row.mn, mx = row.mx }
         end
     end
     xsound.load_meta(rows)
@@ -617,7 +617,9 @@ local function play_base_channel(ch, tg)
     vol = vol * opt_ambient_volume
     xsound.play(file, { position = vec, volume = vol })
     if dd_debug.is_on() then
-        dd_debug.debug("[BASE] lvl=%s ch=%s file=%s dist=%.1f vol=%.2f", level.name(), ch.name, tostring(file), dist, vol)
+        local d3d = math_sqrt(dist * dist + ch.height * ch.height)
+        dd_debug.debug("[BASE] lvl=%s ch=%s file=%s%s vol=%.2f",
+            level.name(), ch.name, tostring(file), _build_detail(tostring(file), d3d), vol)
     end
 end
 
@@ -718,6 +720,23 @@ local function _get_verdict(dlv)
     return "AUD"
 end
 
+--- The acoustic tail for a [PLAY]/[BASE] trace line: 3D distance, delivered dB, audibility verdict, and the
+--- sound's profile loudness (lufs/crest/peak/bv) plus the enclosure token, or "" without a profile.
+--- Mirrors DiegeticAmbience da_diag._build_detail; reuses the same xsound calls the review player readout makes.
+function _build_detail(path, dist)
+    if not (xsound and xsound.get_meta) then return "" end
+    local prof = xsound.get_meta(path)
+    if not prof then return "" end
+    local dlv = xsound.compute_delivered_loudness(prof, dist)
+    return string_format(" dist=%s dlv=%s vd=%s lufs=%.0f crest=%.0f peak=%s bv=%.2f env=%s",
+        dist and string_format("%.0f", dist) or "-",
+        dlv and string_format("%.0f", dlv) or "-",
+        _get_verdict(dlv),
+        prof.lufs or 0, prof.crest or 0,
+        prof.peak and string_format("%.0f", prof.peak) or "-", prof.bv or 1.0,
+        board.environment)
+end
+
 --- Fire one positioned one-shot at path, pulling the rolled spawn distance closer by dread and placing it via get_placement.
 --- Returns the distance; the volume is the base table times the sliders, and the trace reads delivered loudness via the profile.
 function play_sound(path, opts)
@@ -730,11 +749,9 @@ function play_sound(path, opts)
     xsound.play_at(path, { position = vec, volume = vol })
     if dd_debug.is_on() then
         local d3d = math_sqrt(dist * dist + height * height)
-        local prof = xsound.get_meta and xsound.get_meta(path)
-        local dlv = prof and xsound.compute_delivered_loudness(prof, d3d)
-        dd_debug.debug("[PLAY] %s dist=%.1f band=%.0f-%.0f h=%.0f dlv=%s vd=%s vol=%.2f dread=%.2f",
-            path, dist, opts.ch_min or 0, opts.ch_max or 0, height,
-            dlv and string_format("%.0f", dlv) or "-", _get_verdict(dlv), vol, opts.dread or 0)
+        dd_debug.debug("[PLAY] %s band=%.0f-%.0f h=%.0f%s vol=%.2f dread=%.2f",
+            path, opts.ch_min or 0, opts.ch_max or 0, height,
+            _build_detail(path, d3d), vol, opts.dread or 0)
     end
     return dist
 end
