@@ -5,7 +5,8 @@ It gathers dark and eerie sounds from community soundscape packs, then measures 
 A runtime director reads where the player stands and who is near.
 It does not add engine ambient channels and it does not edit an ambient file. It plays its own sounds, and it mutes the base game's copy of any sound it also ships.
 
-This document is the method and the invariants. The build tool is `tools/build.py`. Every number below is reproduced by a subcommand of it, not chosen by hand.
+This document is the method and the invariants. The build tool is `diegetic-manager` (stalker-dev, shared with DiegeticAmbience); this repo holds only data:
+`tools/sources.yaml` (the authored gather config), `tools/manifest.json` (the corpus record), `tools/measure_cache.json`, and the committed proofs. Every number below is reproduced by the tool, not chosen by hand.
 
 ## Model: a single-sound director, no channels
 
@@ -27,7 +28,7 @@ review player, which also reads a logs-dir `.txt` playlist through `getFS`. Ther
 The category is the unit of organization and of play. It is a directory of sounds plus two attributes, an `env` set (which enclosure states it may play in) and a `requires` gate (a live precondition),
 with no weight and no cooldown. Dread lives per-sound. `dd_spooks_metadata` (the `sounds` table, `["deployed-name"] = { dread = "low"|"med"|"high" }`) is the single source of a sound's dread.
 A sound with no override plays at EVERY scene dread (the default), and an overridden one plays ONLY at its dread. Curating a sound is adding one line to that table, keyed by the stable deployed name,
-and it survives a `rebuild` (which wipes the tree but keeps the hand-curated tables). The director reads the generated sound config (`dd_sound_metadata.script`) that lists each category,
+and it survives every gather and master (dread lives in the hand-curated table, never in the tree). The director reads the generated sound config (`dd_sound_metadata.script`) that lists each category,
 then that category's flat sound list, each row a named-field table: its blob attenuation pair, its source channel's SPAWN band and `indoor` flag (the author's placement), its height,
 and its measured loudness (`lufs`/`crest`/`bv`). The director also flattens those rows into `xsound.load_meta`, so any consumer can read a sound's delivered loudness.
 It applies the dread override at load to build the per-dread pools. The config replaces the channel definitions the director used to read from `sound_channels.ltx`.
@@ -36,40 +37,25 @@ The category list is the single source of truth.
 
 ## Content pipeline (reproducible)
 
-`tools/build.py` is a seven-stage pipeline. Each stage is a subcommand that reads the previous stage's committed artifact and writes the next. The pipeline runs as one of two commands.
-`rebuild` is the full run. It wipes `zs/` and re-emits the whole corpus FLAT into `<category>/`, is RARE, and refreshes the ledger and provenance proofs. `add` is the incremental everyday path.
-It ingests a new source into `<category>/` and re-syncs the config from the current tree, and it leaves the existing tree in place.
-Dread curation is per-sound in `dd_spooks_metadata` rather than in the tree, so neither command touches it. Adopting a pack is additive, and a full re-run is a rewrite.
+`diegetic-manager` runs two phases with a hard boundary. GATHER (`gather DiegeticDread <Source>`) is the only phase that reads a source pack: it executes the authored
+`tools/sources.yaml` (registry + route rows), routes, gates 44100, folds stereo, slices the long `dark_signal` beds, culls dead files, dedups by waveform against itself AND
+against the manifest, and freezes everything the pack can ever tell us into `tools/manifest.json` - author blob, spawn band, height, indoor, veto wiring, origin, every
+collapsed duplicate's path. Its per-pack coverage proof (UNUSED-DARK = 0) and provenance rows commit as the record; after they pass, the pack is deletable. Gather is
+idempotent: a re-run of an ingested pack changes nothing. MASTER (`master DiegeticDread`) never touches a pack: it recomputes every blob from the manifest's AUTHOR values
+under the current floors (deterministic, tunable both directions), emits `dd_sound_metadata` and the veto overlay, and runs verify (closure, integrity, schema) plus the
+reach audit. Dread curation is per-sound in `dd_spooks_metadata` rather than in the tree, so neither phase touches it.
 
-```
-plan        source trees, deduped by waveform        -> merged_channels.json
-classify    measured features per sound              -> classification.json
-loudness    per-group loudness, outliers flagged     -> loudness_outliers.json
-deploy      audio + sound config + veto DLTX overlay -> gamedata/
-ledger      content-hash proof of coverage           -> ledger.tsv
-provenance  every shipped sound -> its origin         -> provenance.tsv
-verify      config paths <-> deployed oggs match       -> stdout
-audit       reach: sounds placed past their own max    -> stdout
-```
-
-- plan (`cmd_plan`): walk every source pack's sound tree and route each FILE to a category by its folder path (`route` / `ROUTE`), a structural per-file allowlist.
-  The packs ship far more dark content than they wire into a channel, so the folder trees are the source of truth over any config list. Gate on sample rate, drop dead-silent files,
-  deduplicate by waveform, then run the long-file pass: a sound whose ACTIVE (silence-removed) length exceeds the max emission window is culled, except `dark_signal`,
-  which is sliced into short desilenced pieces (`_cull_long_files`). Output `merged_channels.json` (the curated corpus) and `folder_audit.tsv` (which folders each category pulled).
-- classify (`cmd_classify`): one ffmpeg pass per sound for duration, spectral centroid and flatness, and crest. There is no loop-versus-effect decision. Everything plays once.
-- loudness (`cmd_loudness`): measure integrated loudness per sound and flag per-group outliers.
-- deploy (`cmd_deploy`): fold every stereo file to mono (`_masterize_channels`, since the engine 3D-positions mono only), then collapse any that fold to identical mono (`_dedupe_folded`, veto-safe).
-  It drops only DEAD files (unmeasurable or silent after the fold, `_cull_dead`) and the by-ear rejected (`_apply_rejects`, the REJECT set).
-  The survivors are copied FLAT to `zs/<category>/<name>.ogg`.
-  It writes each file's blob with the AUTHOR's attenuation min/max and base_volume, plus two lift-only floors (min_distance floor and base_volume loudness floor, `_normalize_blobs`),
-  with no corpus re-level. It writes the sound config the director reads (`dd_sound_metadata.script`: category -> its flat sound list, per sound the blob attenuation pair,
-  the source channel's spawn band and `indoor` recovered by `_build_source_band_map`, the source-channel height, and the measured `lufs`/`crest`/`bv`),
-  reports any stale `dd_spooks_metadata` dread entry (`_report_dangling_dread`),
-  and generates the base-veto DLTX overlay that removes our sounds from the base ambient channels (`_build_veto_overlay` -> `mod_sound_channels_diegeticdread.ltx`).
-- ledger (`cmd_ledger`) and provenance (`cmd_provenance`): the proofs, below.
-- verify (`cmd_verify`): referential integrity - every `dd_sound_metadata` path resolves to an .ogg on disk, and every
-  deployed .ogg is in the config. Since the config is generated FROM the tree, a mismatch means the committed config
-  drifted from the committed tree (a hand edit, or a change never redeployed). Read-only. Runs standalone or in a rebuild.
+- gather: walk the source pack's sound tree and route each FILE to a category by its folder path (the `routes` rows of `sources.yaml`, a structural per-file allowlist).
+  The packs ship far more dark content than they wire into a channel, so the folder trees are the source of truth over any config list. Gate on sample rate, fold stereo to mono
+  (the engine 3D-positions mono only; the author blob is captured BEFORE the fold strips it), drop dead files (true silence after the fold), and run the long-file pass:
+  a sound whose ACTIVE (silence-removed) length exceeds the max emission window is culled, except `dark_signal`, which is sliced into short desilenced pieces.
+  Deduplicate by waveform against the pack and against the manifest, merge every duplicate's origin and wiring into the surviving row, append net-new rows, and run the
+  per-pack coverage proof: every dark file is shipped, booked (dead, long, off-rate, re-encode), or the gather FAILS with the repo untouched. Plan runs entirely in scratch;
+  the tree, the manifest, and the proof rows commit only after the proof passes.
+- master: recompute each file's blob from its manifest AUTHOR values - attenuation min/max and base_volume verbatim, plus the two lift-only floors (min_distance floor and
+  base_volume loudness floor) - and write only the files whose target differs. Emit `dd_sound_metadata.script` (category -> flat sound list, per sound the blob pair, spawn
+  band, `indoor`, height, measured `lufs`/`crest`/`peak`/`bv`) and the base-veto DLTX overlay from the manifest veto rows. Verify: manifest-tree closure both ways,
+  id-vs-audio integrity (a hand-edited ogg trips it), the manifest schema gate, the dangling-dread report, then the reach audit.
 
 ### No audible sound drops before audition
 
@@ -85,40 +71,27 @@ and its folders are mapped to categories by adding rows to `ROUTE` (the structur
 and anything unmatched is dropped (dark scope). There is no keyword classifier that decides scope on its own.
 The `UNUSED-DARK = 0` ledger invariant then confirms the hand-written rules captured every dark file the pack holds.
 
-The source list is the registry `tools/sources.py` (n124): one declarative entry per pack with `name`, local `path`, reference `url`, and `licence`, and `MODS` derives from it (`sources.mods()`),
-preserving the exact order (dedup is order-sensitive). Sources are ALWAYS pulled locally by hand, and the pipeline never downloads. The `url` is a credit and provenance reference only (readme,
-licensing). Nothing fetches it. A licence gate (`check_licences`) stops the build on any source not cleared (`licence = pending`).
-`build.py provision` reports each source present or MISSING, using the build's OWN capture (`<path>/sounds/*.ogg`). A wrong path shows up here instead of being silently skipped.
-`_scan_source` now WARNS loudly rather than quietly continuing past a source with no `sounds/` (the defect that hid AmplifiedVanilla from every build).
+The source list is the registry in `tools/sources.yaml`: one declarative entry per pack with `name`, local `path`, reference `url`, and `licence`, order preserved (dedup and
+band-provenance rank are order-sensitive). Entries are never deleted after gather - the path may go stale, the licence/credit record stays. Sources are ALWAYS pulled locally
+by hand, and the pipeline never downloads. The `url` is a credit and provenance reference only. A licence gate stops a gather FROM any source not cleared (`licence: pending`).
+`diegetic-manager provision DiegeticDread` reports each source present or MISSING; a missing pack blocks only ITS gather - master never needs one.
 
-### Identity and build modes (identity, additive `add`, and source registry all implemented)
+### Identity and the corpus of record
 
-`cmd_deploy` names each file by content: `_deployed_name` = `<origname>_<audiohash>`.
-The old positional `zs/<category>/<N>.ogg` (`N` = enumerate order) was a collision workaround, since many packs ship the same filename.
-But it RE-INDEXED every file whenever content was added or removed, so a build could only run from scratch. The content name fixes that. IMPLEMENTED today:
+Each file is named by content: `zs/<category>/<origname>_<audiohash>.ogg`, the hash an md5 of the audio pages only (blob-agnostic), short form. The name is readable, unique
+(the hash disambiguates the generic `sound_NN` names 27 packs share), and stable - identical audio always maps to the same name, and adding content never renames anything.
+The manifest row key is `<category>/<name>`, category-qualified because one pack ships identical audio in two folders routed to two categories (the labs/drone twins).
 
-- Name = original name plus audio hash: `zs/<category>/<origname>_<hash>.ogg`, `hash` = `_hash_audio` (md5 of the audio pages only, blob-agnostic) in short form.
-  The name is readable, keeping the source name, and unique, since the hash disambiguates two files that share a name. It is also stable, since identical audio always maps to the same name,
-  and adding content never renames an existing file.
-- Origin (mod, folder, original path) stays in `provenance.tsv` keyed by the name, never baked into the filename. The path is long and shifts if a source reorganizes, while the audio does not.
-- Exact-dedup key: the full build's stage-1 keys on `hash_file` (whole-file md5), and audio-identical copies that differ only in their blob collapse at the fp/xcorr stage.
-  `add` matches a new sound against the published set by the `_hash_audio` tail carried in each deployed name.
-  Tightening the full build's stage-1 to `_hash_audio` (so name-uniqueness holds before the fuzzy stage too) is a pending robustness step (n124).
-- Re-encode and near-clone detection = Chromaprint fp plus PCM xcorr, COMPUTED ON DEMAND from the `.ogg` files during a build, never persisted. A fingerprint is derived data.
-  Only the exact hash goes in the name, because the name itself needs a unique stable id with no side registry, which is naming. There is no fingerprint cache.
-- Two build modes:
-  - full (`rebuild`): whole source pool -> route -> dedup -> name -> write, then ledger plus provenance. It WIPES `zs/` and re-emits every file FLAT into `<category>/`, the canonical corpus,
-    run before a release. Dread curation lives in `dd_spooks_metadata` (per-sound, never in the tree), so a wipe never resets it.
-  - additive (`add <source> <gamedata>`, IMPLEMENTED): the published corpus is FROZEN, keyed on the CORPUS OF RECORD (the audio hashes of the existing `merged_channels.json` entries).
-    Keying on the post-cull deployed files re-proposed culled sounds every run and never converged. Route the new source with the shared capture rule (`_scan_source`),
-    waveform-dedup it against itself, drop anything already in the record (audio hash) and any re-encode of a published sound (fp plus PCM xcorr, `_drop_frozen_reencodes`),
-    APPEND only net-new into `<category>/` (new names, existing untouched), then regenerate classify and deploy. It NEVER wipes `zs/`, and dread curation is in `dd_spooks_metadata`.
-    It SKIPS the slow full plan and the ledger, so an add runs in minutes, well under the full ~25. A re-add of an already-ingested pack is idempotent (`+0 net-new`). Limit:
-    deploy re-emits the whole corpus from source (the packs must be on disk), and a full `rebuild` reconciles `merged_channels.json` (gitignored,
-    so a build rebuilds it from scratch) and refreshes the ledger and provenance proofs.
-- Limits: re-encode detection is heuristic (fp >= 0.88 candidate, xcorr >= 0.90 decide), not exact.
-  Additive freezes existing NAMES and AUDIO and does NOT re-level (each file keeps its author's base_volume), so an add never shifts an existing file's loudness.
-  It can still diverge from a fresh full build at the margins. `rebuild` is canonical, and a full rebuild reconciles.
+The corpus of record is `tools/manifest.json`: one committed row per sound ever gathered, holding its origin pack and path, every collapsed duplicate's (pack, path), the
+AUTHOR blob captured pre-fold, the source spawn band with its resolution provenance (same-author / dup-pack / other-pack / unwired), height, indoor, the verbatim veto
+strings, fold and slice lineage, duration, fingerprint, and a `seq` ordinal that keeps every emit byte-stable. Rejected sounds stay as rows (status plus fingerprint), so a
+re-encode of a reject is flagged at the next gather instead of re-entering. The manifest is why the packs are deletable: master recomputes everything from it.
+
+- Gathering is ALWAYS additive: the published corpus is frozen, a new pack dedups against the manifest (recorded paths first, then exact audio hash, then chromaprint
+  candidates decided by PCM cross-correlation at >= 0.90), origins and wiring MERGE into existing rows, and only net-new audio enters, appended with the next `seq`.
+  A re-gather of an ingested pack is byte-idempotent: the manifest does not change.
+- Limits: re-encode detection is heuristic (fp >= 0.88 candidate, xcorr >= 0.90 decide), not exact. A quality upgrade (a better copy of a shipped sound arriving later)
+  never happens implicitly - the frozen copy wins; upgrading is a deliberate reject-and-regather.
 
 ## Deduplication: waveform identity, source side only
 
@@ -154,7 +127,7 @@ Blob contract (the engine-read fields). The comment is a `0x0003` X-Ray struct o
   The floor raises each file's written min to `ratio x its felt-far distance` (band_max/2). It never lowers an authored min,
   so the distance-baked 300-10000m sounds and every deliberately-authored range stay untouched. max is kept unchanged, and the guard `max > min` keeps the engine divide safe.
   - The ratio is NOT flat. PRINCIPLE (measured, mild-moderate, automated): placement loudness follows CREST, INVERTED (`_crest_ratio`). A sustained low-crest tone carries in air,
-    so a higher ratio keeps it present at distance. A sharp high-crest transient is a near-field detail, so a lower ratio keeps it intimate. Crest is measured per file (`classification.json`).
+    so a higher ratio keeps it present at distance. A sharp high-crest transient is a near-field detail, so a lower ratio keeps it intimate. Crest is measured per file (the measurement cache).
     Verified across the corpus: `drip` (24 dB), `rats`, and `foliage` are the sharp near-field sounds, and the sustained dread (`drone`/`scream`/`mutant`/`spook`, ~6-7 dB) carries.
     Span 0.40-0.60 (`RATIO_LO`/`RATIO_HI`) centers on the old flat 0.5, with ~3 dB of far-edge spread, so scares and beds separate without anything dropping to silence.
     This restores the near/far loudness depth a single flat ratio had removed. A blob-less file gets its category-folder median min/max, then the same crest floor.
@@ -254,7 +227,7 @@ It is the per-sound business metadata, distinct from the generated audio facts i
 and the SELECT-stage counterpart to the per-level and coordinate overrides in `dd_location_override`.
 A sound with no entry plays at every dread; a dedicated entry supersedes that, playing ONLY at its dread. The table is EMPTY by default,
 so there are no overrides and every sound plays everywhere, exactly as before curation. Curating is adding a line keyed by the deployed name (the stable `<origname>_<hash>`).
-It survives a `rebuild` because the LTX is not part of the wiped tree.
+It survives every gather and master because it is hand-curated data, never generated.
 `_report_dangling_dread` at deploy flags any entry whose name matches no shipped sound (a stale hash after an upstream re-encode silently reverts that sound to play-everywhere).
 This coexists with the no-repeat shuffle-bag by construction: the pools are precomputed and stable, so `_select_sound` still draws each pool once before repeating,
 and the override decides only pool membership, leaving the rotation intact.
@@ -282,10 +255,10 @@ and a **placement pull** (`play_sound` moves the rolled spawn distance up to 20%
 
 Each emitted sound is placed by the base game's `update_ambient` code. `get_placement` clones its placement and volume math (`sound_ambient.script:127-165`),
 fed with the sound's OWN source-channel values from the config: the channel SPAWN band (`ch_min`/`ch_max`,
-recovered by build.py `_build_source_band_map` and `_resolve_band` from the same channel files the veto reads, SAME-AUTHOR, since the band comes from the pack the shipped copy and its blob came from,
+harvested at gather from the same channel files the veto reads and frozen in the manifest, SAME-AUTHOR, since the band comes from the pack the shipped copy and its blob came from,
 because blob and placement must be one author's pair or the combination reproduces nobody's mix). Fallbacks run in order: a collapsed duplicate's own pack, then any pack wiring the path,
 then the UNWIRED fallback, where the sound gets its CATEGORY CENTER (the median of that category's wired bands,
-or of its own blobs when nothing in it is wired) plus a deterministic +/-25% jitter (`_name_jitter`, seeded by the deployed name so a rebuild never reshuffles),
+or of its own blobs when nothing in it is wired) plus a deterministic +/-25% jitter (seeded by the deployed name so a re-master never reshuffles),
 capped to the sound's own blob max so it is never placed past its silence point. This replaces an earlier own-blob fallback that flung a default 1-300 blob out to 150m.
 The category center places a folder-only sound where that category actually sits. Per-category plus the blob-max cap means no cross-category leak.
 Every cross-pack comparison follows the sources.py registry order, Shrike's latest Amplified line first, the same preference dedup uses to pick the winning copy,
@@ -295,7 +268,7 @@ and the vanilla indoor/outdoor/underground volume table times the game ambient s
 The heard loudness at that distance is then the engine's attenuation on the AUTHOR's blob (min/max plus base_volume). The author placed it, the author leveled it,
 and the director decides only WHEN and WHAT. The two distance pairs are never conflated. The blob pair is the FADE curve, and the channel pair is the SPAWN band (see `sound-source-and-emitter.md`,
 attenuation range versus spawn radius). The blob min also drives OpenAL's second rolloff, which is exactly why the author's spawn band must be used and no invented distance is substituted.
-Height is the sound's ORIGINAL source-channel elevation (build.py `_build_source_height_map`, aggregated across packs, highest non-zero wins), carried in the config as `snd.h`,
+Height is the sound's ORIGINAL source-channel elevation (harvested at gather, highest non-zero wins), carried in the manifest and the config as `snd.h`,
 so an overhead sound (bird, vent, thunder) stays overhead.
 
 ### Position overrides - hand-marked static positions
@@ -360,7 +333,7 @@ Players never see it, and it feeds off `dd_director.get_hud_rows`.
 
 A category is atomic, one coherent thing (one dread kind, one zone) and never a grab-bag. The category is the unit of organization, the shipped folder (`zs/<name>/`, a flat directory of oggs,
 with dread the per-sound `dd_spooks_metadata` override) and the config key.
-**The pipeline category list carries only the name and the folder routing** (`CATEGORIES` plus `route` in `build.py`) and holds no play rules. A category's runtime attributes, its `env` set,
+**The pipeline category list carries only the name and the folder routing** (the `routes` rows of `tools/sources.yaml`, executed by the tool's dread seam) and holds no play rules. A category's runtime attributes, its `env` set,
 its `requires` gate, the per-map eligibility, and the presence checks, live in the director (`dd_director`) and the per-map LTX, keyed by the category name.
 The config carries sound paths and per-sound values only, and the category NAME is the entire contract between the pipeline and the runtime.
 
@@ -385,7 +358,7 @@ DiegeticDread removes its own sounds from the base's ambient channels STATICALLY
 
 ### Static removal (the muting)
 
-`tools/build.py deploy` generates a DLTX overlay, `configs/environment/mod_sound_channels_diegeticdread.ltx` (`_build_veto_overlay`). It is derived from the pipeline's OWN record, the chosen corpus,
+`master` generates a DLTX overlay, `configs/environment/mod_sound_channels_diegeticdread.ltx`, from the manifest's veto rows. It is derived from the pipeline's OWN record, the chosen corpus,
 rather than from any installed pack. Every shipped sound was captured from a registry source (`tools/sources.py`) at a known path, and a source wires that path to a channel only in its own config,
 the same file a user running that pack loads. So for each shipped sound the generator reads its origin pack's channel files and emits, for every channel that lists the path,
 `![channel]` plus `<sounds = <path>`, a per-item DLTX removal (`Xr_ini.cpp:235-238`,
@@ -395,7 +368,7 @@ and it survives anything at runtime, since there is no slot to lose.
 
 - Complete by construction, install-independent. The overlay excludes every sound we ship at every source path we drew it from.
   A user running one of our source packs has that pack's identical channels, so our removal applies. A pack we never sourced holds none of our audio, so there is nothing of ours to double there.
-  Coverage does not depend on the build machine's modlist. It never needs re-running after one, and it is regenerated from the registry on every `build.py rebuild`, like every other artifact (I11).
+  Coverage does not depend on the build machine's modlist. The wiring is harvested once per pack at gather (verbatim strings, per pack and channel) and the overlay is regenerated from the manifest on every `master`, like every other emitted artifact (I11).
 - Identity is the SOURCE PATH rather than a runtime file hash. The generator matches each chosen sound's recorded path against its origin pack's channel entries.
   It never scans an install or hashes a played file. The same recording often ships in several source packs, byte-identical or a re-encode,
   and dedup collapses those copies to one while keeping the (pool, source_path) of every collapsed copy on the survivor (`dups`, set in `dedupe`, folded across categories by `_fold_dups`).
@@ -434,13 +407,14 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 
 ## Preservation and proof
 
-- Audio is byte for byte, proven. `cmd_provenance` re-derives the deploy and compares each shipped file's audio hash to its source. The current build reports every shipped file matched, no mismatch,
+- Audio is byte for byte, proven. Each gather self-verifies every shipped file's audio hash against its source before the proof rows commit. The record stands at every file matched, no mismatch,
   comment-blob-agnostic so a written blob does not count as a change.
 - Volume and distance sit in the X-Ray blob. A source file that shipped with a blob keeps it exact. A blob-less file gets the category-folder median, base_volume 1.0,
   which is an approximation and is booked as one.
-- `provenance.tsv` (`cmd_provenance`) maps every shipped sound (its deployed `zs/<category>/<name>`) to its origin mod, source directory, and filename, plus the deployed base_volume,
+- `provenance.tsv` maps every shipped sound (its deployed `zs/<category>/<name>`) to its origin mod, source directory, and filename, plus the deployed base_volume,
   and self-verifies each by audio hash against the source. Categories are not channels, so there are no channel/period/section columns. Nothing loses its origin under the content-hash rename.
-- `ledger.tsv` (`cmd_ledger`) hashes every source dark sound and books it: shipped, held, or excluded with a reason (emission-domain, intra-corpus re-encode, dead-silent, off-rate, off-scope).
+- `ledger.tsv` (the historical full-coverage proof) books every source dark sound: shipped, held, or excluded with a reason (emission-domain, intra-corpus re-encode, dead-silent, off-rate, off-scope);
+  each gather since runs the same proof per pack and fails on any uncaptured dark file.
   The invariant is `UNUSED-DARK = 0`. No net-new dark sound is left uncaptured.
 
 ## Invariants
@@ -469,7 +443,7 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
   It never adds a channel and never injects a sound into the base ambient. The base's other sounds are untouched.
 - I9 Dark scope only. Keep spook, horror, underground, eerie, and oppressive weather. Leave generic daytime life and the base weather bed to the base ambience.
 - I10 Leave emission alone. Blowout and psi-storm are their own system and are never touched.
-- I11 Reproducible. plan to classify to loudness to deploy to ledger to provenance regenerates the whole overlay from the packs.
+- I11 Reproducible. master regenerates every emitted artifact (blobs, `dd_sound_metadata`, the veto overlay) from the manifest deterministically - same inputs, same bytes, no packs.
 - I12 Traceable. Every shipped sound resolves to its origin via `provenance.tsv`. Every source file resolves to a ledger category. Credit every source pack, author, and link in the readme.
 - I13 The director owns its own play slot only while active. Without xlibs the director is inert (no play), but the veto still holds because it is the static DLTX overlay, independent of xlibs.
   The observer clone resets on hour, level, or weather change, so it never replays a channel for the wrong level, and it guards every value an engine call needs.
@@ -498,16 +472,16 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
 
 ## Tools and data artifacts
 
-- Signal analysis: `ffmpeg` (`aspectralstats` centroid and flatness, `astats` crest, `ebur128` loudness), `ffprobe` (duration, rate, codec). Dedup identity: md5, then Chromaprint `fpcalc`,
-  then PCM cross-correlation. Stereo-to-mono masterization: mid/side RMS classify plus a deterministic libvorbis fold. All resolved from `$PORTX_ROOT/packages` by `soundpool.py`,
-  the reusable audio core (it holds no DiegeticDread concepts, so a second sound pipeline can import it directly).
-- Committed data: `merged_channels.json` (the curated corpus per category), `classification.json` (measured features), `loudness_outliers.json`,
-  `folder_audit.tsv` (which source folders each category pulled), `ledger.tsv` (coverage proof), `provenance.tsv` (origin of every shipped sound).
-- `build.py` is the pipeline, and its `MODS` list and `route`/`ROUTE` table are the source of truth. The whole run is one command,
-  `build.py rebuild` (plan -> classify -> loudness -> deploy -> ledger -> provenance -> verify -> audit, in order), and `build.py add` is the incremental path. `soundpool.py` is the probe and resolver.
+- Signal analysis: `ffmpeg` (`astats` crest and true peak, `ebur128` loudness), `ffprobe` (duration, rate, codec). Dedup identity: md5, then Chromaprint `fpcalc`, then PCM
+  cross-correlation. Stereo-to-mono masterization: mid/side RMS classify plus a deterministic libvorbis fold. All in `diegetic-manager/core/` (stalker-dev), the audio core
+  shared with DiegeticAmbience; tools resolve from `$PORTX_ROOT/packages`.
+- Committed data: `tools/sources.yaml` (the authored gather config: registry, routes, excludes), `tools/manifest.json` (the corpus record), `tools/measure_cache.json`
+  (audio-hash-keyed lufs/crest/peak/dur/fingerprint), `ledger.tsv` (the historical full-coverage proof), `provenance.tsv` (origin of every shipped sound, appended per gather).
+- The tool is `diegetic-manager` in stalker-dev; this repo holds data only. `gather DiegeticDread <Source>` is the once-per-pack ingest; `master DiegeticDread` is the
+  forever path: blobs, metadata, veto, verify, audit - no packs required.
 
-A new pack is adopted by hand first. Its folders then enter `MODS` and `ROUTE`. `build.py add <Source> <gamedata>` ingests it into `<category>/` (flat).
-`build.py rebuild` before a release refreshes the ledger (UNUSED-DARK must stay 0) and the provenance self-verify (0 mismatch).
+A new pack is adopted by hand first: audition it, author its `sources.yaml` rows (registry entry + route rows), then `gather DiegeticDread <Source>`. The coverage proof
+(UNUSED-DARK = 0) audits the authoring; the pack is deletable once the committed proof rows land.
 
 ## Deploy
 
