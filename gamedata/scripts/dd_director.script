@@ -197,7 +197,7 @@ end
 local function _get_sound_count(cat) return cat and #cat or 0 end
 
 --- True if a category has any sound.
-local function _hdd_sounds(cat) return _get_sound_count(cat) > 0 end
+local function _has_sounds(cat) return _get_sound_count(cat) > 0 end
 
 --- Load the per-sound dread overrides from dd_spooks_metadata.sounds into _sound_dread, keyed by deployed name.
 local function _load_dread()
@@ -277,7 +277,7 @@ local function _load_map(level_name)
     local levels = dd_location_override and dd_location_override.levels or {}
     local function add_level(names)
         for _, name in ipairs(names or {}) do
-            if CATEGORY[name] and _hdd_sounds(_category_sounds[name]) then _map_set[name] = true end
+            if CATEGORY[name] and _has_sounds(_category_sounds[name]) then _map_set[name] = true end
         end
     end
     add_level(levels[LEVEL_DEFAULT])
@@ -410,8 +410,8 @@ local function is_eligible(name, position)
     local allowed = _map_set[name]
     if position and position.cats then
         if position.only then
-            allowed = position.cats[name] and CATEGORY[name] and _hdd_sounds(_category_sounds[name])
-        elseif position.cats[name] and CATEGORY[name] and _hdd_sounds(_category_sounds[name]) then
+            allowed = position.cats[name] and CATEGORY[name] and _has_sounds(_category_sounds[name])
+        elseif position.cats[name] and CATEGORY[name] and _has_sounds(_category_sounds[name]) then
             allowed = true
         end
     end
@@ -720,7 +720,7 @@ local function _get_verdict(dlv)
     return "AUD"
 end
 
---- The acoustic tail for a [PLAY]/[BASE] trace line: 3D distance, delivered dB, audibility verdict, profile loudness (lufs/crest/peak/bv), enclosure token; "" without a profile.
+--- The acoustic tail for [PLAY]/[BASE]: distance, delivered dB, verdict, profile loudness (lufs/crest/peak/bv), enclosure. "" without a profile.
 --- Reuses the same xsound calls the review player readout makes.
 function _build_detail(path, dist)
     if not (xsound and xsound.get_meta) then return "" end
