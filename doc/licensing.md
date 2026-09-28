@@ -18,7 +18,7 @@ Freely licensed sources (Public Domain, Creative Commons) and GSC-original audio
   PERMISSION granted 2026-08-15, same grant.
 - Audio Expansion, by AniHVX. PERMISSION granted 2026-08-16, Discord (Ani HVX). https://www.moddb.com/members/anihvx
 - Ambient Extended Reworked, by Txiku. PERMISSION granted 2026-08-16, moddb PM. https://www.moddb.com/mods/stalker-anomaly/addons/ambient-extended-reworked
-- RETUNE Ambience Sounds, by Aphrodite_child. PERMISSION granted 2026-08-16, Discord (The_aphrodite_child). https://www.moddb.com/mods/stalker-anomaly/addons/retune-ambience-sounds
+- RETUNE Ambience Sounds, by Aphrodite_child. PERMISSION granted 2026-08-16, Discord. https://www.moddb.com/mods/stalker-anomaly/addons/retune-ambience-sounds
 - Soundscape Overhaul, by Solarint. LICENSE: Public Domain. https://www.moddb.com/mods/stalker-anomaly/addons/soundscape-overhaul-2
 - Real Distant Mutants Sounds. LICENSE: Public Domain. https://www.moddb.com/mods/stalker-anomaly/addons/anomaly-real-distant-mutants-sounds-v10
 - Immersive Ambience Expansion, by Kutee. LICENSE: Creative Commons. https://www.moddb.com/mods/stalker-anomaly/addons/immersive-ambience-expansion
