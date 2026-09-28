@@ -26,12 +26,12 @@ end
 function get_platform_status()
     local xver = (xlibs and xlibs.get_version and xlibs.get_version()) or "?"
     local line = manifest.name .. " " .. manifest.version .. ", xlibs " .. xver
-    local hdd_build = type(get_modded_exes_version) == "function"
+    local has_build = type(get_modded_exes_version) == "function"
     if type(get_aoe_version) == "function" then
         line = line .. ", AOEngine " .. tostring(get_aoe_version())
-        if hdd_build then line = line .. ", xray-monolith " .. _build_tag(get_modded_exes_version()) end
+        if has_build then line = line .. ", xray-monolith " .. _build_tag(get_modded_exes_version()) end
         return line .. " (partially compatible)", "fallback"
-    elseif hdd_build then
+    elseif has_build then
         local build = get_modded_exes_version()
         line = line .. ", xray-monolith " .. _build_tag(build)
         if build < LATEST_DEMONIZED_VERSION then
@@ -80,18 +80,18 @@ function on_game_start()
         "! " .. XLIBS_URL .. "\n"
     )
 
-    local hdd_aoe       = type(get_aoe_version)         == "function"
-    local hdd_demonized = type(get_modded_exes_version) == "function"
+    local has_aoe       = type(get_aoe_version)         == "function"
+    local has_demonized = type(get_modded_exes_version) == "function"
 
-    assert(hdd_aoe or hdd_demonized,
+    assert(has_aoe or has_demonized,
         "\n\n! [" .. manifest.name .. "] modded exes not detected.\n"..
         "! " .. manifest.name .. " requires themrdemonized modded exes or AOEngine.\n"..
         "! demonized: " .. DEMONIZED_URL .. "\n"..
         "! AOEngine:  " .. AOENGINE_URL .. "\n"
     )
 
-    local demonized_build = hdd_demonized and get_modded_exes_version() or nil
-    if hdd_demonized and not hdd_aoe then
+    local demonized_build = has_demonized and get_modded_exes_version() or nil
+    if has_demonized and not has_aoe then
         assert(demonized_build >= MIN_DEMONIZED_VERSION,
             "\n\n! [" .. manifest.name .. "] demonized build " .. tostring(demonized_build) ..
             " is older than required.\n"..
