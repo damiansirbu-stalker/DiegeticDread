@@ -720,9 +720,8 @@ local function _get_verdict(dlv)
     return "AUD"
 end
 
---- The acoustic tail for a [PLAY]/[BASE] trace line: 3D distance, delivered dB, audibility verdict, and the
---- sound's profile loudness (lufs/crest/peak/bv) plus the enclosure token, or "" without a profile.
---- Mirrors DiegeticAmbience da_diag._build_detail; reuses the same xsound calls the review player readout makes.
+--- The acoustic tail for a [PLAY]/[BASE] trace line: 3D distance, delivered dB, audibility verdict, profile loudness (lufs/crest/peak/bv), enclosure token; "" without a profile.
+--- Reuses the same xsound calls the review player readout makes.
 function _build_detail(path, dist)
     if not (xsound and xsound.get_meta) then return "" end
     local prof = xsound.get_meta(path)
