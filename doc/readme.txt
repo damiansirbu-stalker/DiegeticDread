@@ -91,7 +91,13 @@ Whichever base you run, it keeps its own atmosphere.
 Measurement drives every choice here, not taste.
 The build is a reproducible pipeline, one command end to end.
 It measures every sound before it goes in.
-ffmpeg reads its spectral centroid, flatness, crest factor, integrated loudness in EBU R128 LUFS. ffprobe reads its duration, sample rate, codec.
+ffmpeg reads its integrated loudness in EBU R128 LUFS, its crest factor, and its true peak.
+ffprobe reads its duration, sample rate, channel count, and bitrate. Chromaprint fingerprints it, and the fold reads its mid and side energy.
+Each value has a use in the build below. Loudness and crest set the floor and the distance ratio. Peak guards the dead-file cull, and duration drives the long-file slice.
+Sample rate holds the 44.1 kHz gate, channel count the fold, bitrate the duplicate pick, and the fingerprint and mid/side energy the dedup and fold.
+Six values are frozen into each sound's metadata and read back in game: its loudness, crest, peak, volume, and near and far distance.
+The director and the in-game trace read them to report how loud a sound arrives where it plays.
+The director also reads each sound's spawn band, height, and indoor flag to place it in 3D around and above you.
 Each pack's folders map to horror categories by hand, and the build pulls every file in them, so it misses nothing the pack buries.
 The build drops a sound too long to play whole. It slices the long radio-signal bed into short pieces.
 Each file keeps its author's own loudness, the X-Ray gain set in the ogg comment, written back unchanged. No leveling.
