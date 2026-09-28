@@ -261,7 +261,7 @@ then the UNWIRED fallback, where the sound gets its CATEGORY CENTER (the median 
 or of its own blobs when nothing in it is wired) plus a deterministic +/-25% jitter (seeded by the deployed name so a re-master never reshuffles),
 capped to the sound's own blob max so it is never placed past its silence point. This replaces an earlier own-blob fallback that flung a default 1-300 blob out to 150m.
 The category center places a folder-only sound where that category actually sits. Per-category plus the blob-max cap means no cross-category leak.
-Every cross-pack comparison follows the sources.py registry order, Shrike's latest Amplified line first, the same preference dedup uses to pick the winning copy,
+Every cross-pack comparison follows the sources.yaml registry order, Shrike's latest Amplified line first, the same preference dedup uses to pick the winning copy,
 and within one pack the author's largest-max wiring wins.
 This goes through the vanilla transform, with min lifted to the band midpoint outdoors, then `random(min, max)/2`, a random bearing, `pos.y + height`,
 and the vanilla indoor/outdoor/underground volume table times the game ambient slider sets the play volume, with the MCM master `vol_global` on top (1.0 = untouched).
@@ -359,7 +359,7 @@ DiegeticDread removes its own sounds from the base's ambient channels STATICALLY
 ### Static removal (the muting)
 
 `master` generates a DLTX overlay, `configs/environment/mod_sound_channels_diegeticdread.ltx`, from the manifest's veto rows. It is derived from the pipeline's OWN record, the chosen corpus,
-rather than from any installed pack. Every shipped sound was captured from a registry source (`tools/sources.py`) at a known path, and a source wires that path to a channel only in its own config,
+rather than from any installed pack. Every shipped sound was captured from a registry source (`tools/sources.yaml`) at a known path, and a source wires that path to a channel only in its own config,
 the same file a user running that pack loads. So for each shipped sound the generator reads its origin pack's channel files and emits, for every channel that lists the path,
 `![channel]` plus `<sounds = <path>`, a per-item DLTX removal (`Xr_ini.cpp:235-238`,
 the Remove op at `1257-1266`) that strips exactly that sound from the channel's `sounds` list and leaves the channel's other sounds.
