@@ -1,0 +1,224 @@
+# sources.yaml - the authored gather config (diegetic-manager reads this; spec 3.1b).
+# GATHER EXECUTES AUTHORED JUDGMENT: audition a pack BY HAND, author its rows here,
+# then `gather` pulls mechanically and the ledger proves the authoring complete.
+# ORDER IS LOAD-BEARING: dedup and band-provenance rank follow this list order.
+# Entries are NEVER deleted after gather (licence/credit record; paths may go stale).
+
+sources:
+  - name: Amplified
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/Dark Signal Amplified Soundscape/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/dark-signal-amplified-soundscape"
+    licence: free
+  - name: Soundscape
+    path: "D:/Games/GAMMA/GAMMA/mods/3- Soundscape Overhaul - Solarint/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/stalker-2-hoc-ambience-overhaul-for-anomaly"
+    licence: free
+  - name: RETUNE457
+    path: "D:/Games/GAMMA/GAMMA/mods/457- RETUNE Ambiant Sounds - Aphrodite_child/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/retune-ambience-sounds"
+    licence: free
+  - name: DarkSignal304
+    path: "D:/Games/GAMMA/GAMMA/mods/304- Dark Signal Weather and Ambiance Audio - Shrike/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/dark-signal-audioscape-weather-and-ambiance"
+    licence: free
+  - name: myRETUNE
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/myRETUNE_AntaresWolverine_2.1/myRETUNE ambience sounds ver2.1/gamedata"
+    url: null
+    licence: free
+  - name: RealDistantMutants
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/Real Distant Mutants Sounds/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/anomaly-real-distant-mutants-sounds-v10"
+    licence: free
+  - name: DSMutants
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/276- Dark Signal Mutants Audio - Shrike/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/dark-signal-audioscape-mutants"
+    licence: free
+  - name: AudioExpansion
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/Audio Expansion/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/audio-expansion"
+    licence: free
+  - name: DeadAir
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/game_builds_for_sound/_unpacked/DeadAir"
+    url: null
+    licence: game
+  - name: OGSE
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/game_builds_for_sound/_unpacked/OGSE"
+    url: "https://www.moddb.com/mods/old-good-stalker-evolution"
+    licence: game
+  - name: Prosector
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/game_builds_for_sound/_unpacked/Prosector"
+    url: null
+    licence: game
+  - name: Solyanka
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/game_builds_for_sound/_unpacked/solyanka"
+    url: null
+    licence: game
+  - name: NLC
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/game_builds_for_sound/_unpacked/NLC"
+    url: null
+    licence: game
+  - name: SoP
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/game_builds_for_sound/_unpacked/sop"
+    url: null
+    licence: game
+  - name: DarkSignal274
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/274- Dark Signal Audio Pack - Shrike/gamedata"
+    url: null
+    licence: free
+  - name: DarkSignal285
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/285- Dark Signal Blowout and Anomalies Audio - Shrike/gamedata"
+    url: null
+    licence: free
+  - name: AmbientExtended
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/Ambient Extended Reworked/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/ambient-extended-reworked"
+    licence: free
+  - name: ImmersiveAmbience
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/Immersive Ambience Expansion/gamedata"
+    url: "https://www.moddb.com/mods/stalker-anomaly/addons/immersive-ambience-expansion"
+    licence: free
+  - name: ShrikeInterior
+    path: "C:/Users/damian/Downloads/stalker_anomaly_mods/audio/Dark Signal Unused Interior - Shrike/gamedata"
+    url: null
+    licence: permission
+  - name: vanilla
+    path: "D:/Games/GAMMA/Anomaly/tools/_unpacked"
+    url: null
+    licence: game
+
+# routes: ordered substring -> category, first match wins; whole-tree structural
+# allowlist, never filename keywords. Unmatched files DROP (dark scope, I9).
+# The zone/creature special rules live in the tool's dread seam (mods/dread.py).
+routes:
+  - ["unused interior", structural]
+  - ["/screams", scream]
+  - ["/dark_signal", dark_signal]
+  - ["radio/white_noise", dark_signal]
+  - ["spooks_below/rats", rats]
+  - ["spooks_below/water_drip", drip]
+  - ["spooks_below/drip", drip]
+  - ["spooks_below/creaks", structural]
+  - ["spooks_below/drone", drone]
+  - ["spooks_below/lab", labs]
+  - ["spooks_below/machine", labs]
+  - ["spooks_below/metal", labs]
+  - ["spooks_below/noise", labs]
+  - ["spooks_below/banging", labs]
+  - ["spooks_below/ambient", labs]
+  - ["spooks_below/background", labs]
+  - ["spooks_below/lowrumble", labs]
+  - ["spooks_below/lowchancerumble", labs]
+  - ["spooks_below/spooks", spook]
+  - ["spooks_above/drone", drone]
+  - ["spooks_above/spooks", spook]
+  - ["water_drip", drip]
+  - ["/drip", drip]
+  - ["nature/bats", bats]
+  - ["/creak", structural]
+  - ["device/airtight", structural]
+  - ["device/door", structural]
+  - ["device/metal_small", structural]
+  - ["device/old/door", structural]
+  - ["out_drone", drone]
+  - ["urban_drones", industrial]
+  - ["day_drones", industrial]
+  - ["/drones", industrial]
+  - ["urban_spoops", urban]
+  - ["urban_debris", urban]
+  - ["ambienturban", urban]
+  - ["wind_dark", wind]
+  - ["wind_creep", wind]
+  - ["wind_gale", wind]
+  - ["wind_heavy", wind]
+  - ["wind_strong", wind]
+  - ["spookgust", wind]
+  - ["galewind", wind]
+  - ["windwhistle", wind]
+  - ["creepy_low_wind", wind]
+  - ["foliage_spook", foliage]
+  - ["/branch", foliage]
+  - ["tree_sway_fog", foliage]
+  - ["/rustle", foliage]
+  - ["soundscape/foliage", foliage]
+  - ["crow/", wildlife]
+  - ["crows/", wildlife]
+  - ["owl/", wildlife]
+  - ["owls/", wildlife]
+  - ["dog/", wildlife]
+  - ["dogs/", wildlife]
+  - ["/shooting", gunfire]
+  - ["out_gunfire", gunfire]
+  - ["/spooks/", spook]
+  - ["northern_spoops", spook]
+  - ["northen_spoops", spook]
+  - ["_spoops", spook]
+  - ["whisper", spook]
+  - ["amb_dark", spook]
+  - ["amb_night", spook]
+  - ["spooks_above", spook]
+  - ["ugrnd_", labs]
+  - ["/ugrnd/", labs]
+  - ["/x18", labs]
+  - ["/x16", labs]
+  - ["ambient/underground/", labs]
+  - ["soundscape/underground/", labs]
+  - ["underground_", labs]
+  - ["metro_horror", dark_signal]
+  - ["/horror/", spook]
+  - ["hotel_horror", spook]
+  - ["/inferno/", spook]
+  - ["fear_sound", spook]
+  - ["night_scream", scream]
+  - ["fallscream", scream]
+  - ["rnd_horror", spook]
+  - ["iron_moan", structural]
+  - ["organic_moan", spook]
+  - ["org_moan", spook]
+  - ["rnd_moan", spook]
+  - ["wounded_psy", spook]
+  - ["psy_blackout", spook]
+  - ["psy_noise", spook]
+  - ["psy_voices", spook]
+  - ["ghost", spook]
+  - ["ambient/tuman", spook]
+  - ["rnd_shooting", gunfire]
+  - ["fog_shooting", gunfire]
+  - ["distantmortar", gunfire]
+  - ["rnd_mutant", mutant]
+  - ["ambient_mutant", mutant]
+  - ["rnd_growl", mutant]
+  - ["distant_growl", mutant]
+  - ["rnd_howling", wildlife]
+  - ["outside_howl", wildlife]
+  - ["wolfhowl", wildlife]
+  - ["metal_noise", structural]
+  - ["ambient/special", spook]
+  - ["lar_indoor", structural]
+  - ["lar_war", spook]
+  - ["lar_suspense", spook]
+  - ["lar_ghosts", spook]
+  - ["lar_call", spook]
+  - ["lar_howled", wildlife]
+  - ["metro_swamp", spook]
+  - ["metro_tunnels", labs]
+  - ["metro_ambients", labs]
+  - ["lar_crow", wildlife]
+  - ["lar_dog", wildlife]
+  - ["lar_owls", wildlife]
+  - ["lar_wolf", wildlife]
+  - ["lar_tree", foliage]
+  - ["lar_wind", wind]
+  - ["howling_wind", wind]
+  - ["howling", wildlife]
+
+# excludes: out-of-scope / misfiled source trees, skipped before routing.
+excludes:
+  - "psi_storm"
+  - "psistorm"
+  - "giant_underground"
+  - "ambience_exp"
+  - "music"
+  - "soundtrack"
+  - "followers_underground"
+  - "scared_stalker_underground"
+  - "spooks_below/bats"
