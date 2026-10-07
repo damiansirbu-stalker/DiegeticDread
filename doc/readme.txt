@@ -153,7 +153,7 @@ Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.
 Coexists:
 - Any soundscape pack (Soundscape Overhaul, Dark Signal, and the rest) - the veto strips DiegeticDread's own sounds from the base channels at load, so nothing doubles.
 - DiegeticAmbience - DiegeticDread plays the horror and vetoes it from the base channels, DiegeticAmbience owns the nature-and-weather bed, and the two never double.
-It coexists with everything else.
+Everything else coexists, as long as it extends X-Ray and Anomaly and never overrides them.
 
 How It's Built:
 
