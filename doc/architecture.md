@@ -16,7 +16,7 @@ The old model shipped our sounds as engine sound channels (`sound_channels.ltx` 
   It lives per-sound in `dd_spooks_metadata` (the business-metadata override, below). The deploy writes no `sound_channels.ltx` definitions for our content.
 - The director (`gamedata/scripts/dd_director.script`) plays each sound as a positioned single play through `xsound.play_at`, the vanilla `play_at_pos` call shape with a RETAINED handle
   that keeps every playing sound stoppable (`xsound.stop_shots`, the dev-tab Stop) and alive across GC. A long horror drone or a psy bed plays as one sound on a long period, with no loop and no bed.
-- The base's own copy of a sound we ship is removed from its ambient channels statically by a DLTX overlay at config load (the veto, below), so the base never doubles the director.
+- The base's own copy of a sound we ship is removed from its ambient channels statically by a DLTX overlay at config load (the exclusion, below), so the base never doubles the director.
   A separate observer owns the vanilla `update_ambient` slot only to replay and log the base ambient.
 
 Because the director is the only playback path, xlibs (`xsound`) is required. Without it the mod is inert and no sound plays. The director's own data is Lua: `dd_sound_metadata`
@@ -38,9 +38,9 @@ The category list is the single source of truth.
 
 `diegetic-manager` runs two phases with a hard boundary. GATHER (`gather DiegeticDread <Source>`) is the only phase that reads a source pack. It executes the authored `tools/sources.yaml`
 (registry + route rows), routes, gates 44100, folds stereo, slices the long `dark_signal` beds, culls dead files, and dedups by waveform against itself and the manifest. It freezes everything the
-pack can ever tell us into `tools/manifest.json` - author blob, spawn band, height, indoor, veto wiring, origin, every collapsed duplicate's path. Its per-pack coverage proof (UNUSED-DARK = 0) and
+pack can ever tell us into `tools/manifest.json` - author blob, spawn band, height, indoor, exclusion wiring, origin, every collapsed duplicate's path. Its per-pack coverage proof (UNUSED-DARK = 0) and
 provenance rows commit as the record, and after they pass the pack is deletable. Gather is idempotent, so a re-run of an ingested pack changes nothing. MASTER (`master DiegeticDread`) never touches a
-pack. It recomputes every blob from the manifest's AUTHOR values under the current floors (deterministic, tunable both directions), emits `dd_sound_metadata` and the veto overlay, and runs verify
+pack. It recomputes every blob from the manifest's AUTHOR values under the current floors (deterministic, tunable both directions), emits `dd_sound_metadata` and the exclusion overlay, and runs verify
 (closure, integrity, schema) plus the reach audit. Dread curation is per-sound in `dd_spooks_metadata` rather than in the tree, so neither phase touches it.
 
 - gather: walk the source pack's sound tree and route each FILE to a category by its folder path (the `routes` rows of `sources.yaml`, a structural per-file allowlist).
@@ -51,7 +51,7 @@ pack. It recomputes every blob from the manifest's AUTHOR values under the curre
   Every dark file is shipped, booked (dead, long, off-rate, re-encode), or the gather FAILS with the repo untouched. Plan runs entirely in scratch.
   The tree, the manifest, and the proof rows commit only after the proof passes.
 - master: recompute each file's blob from its manifest AUTHOR values (attenuation min/max and base_volume unchanged) under the two lift-only floors, then write only the files whose target differs.
-  Emit `dd_sound_metadata.script` and the base-veto DLTX overlay from the manifest veto rows.
+  Emit `dd_sound_metadata.script` and the base-exclusion DLTX overlay from the manifest exclusion rows.
   The metadata row carries the category's flat sound list, and per sound the blob pair, spawn band, `indoor`, height, and measured `lufs`/`crest`/`peak`/`bv`.
   Verify covers manifest-tree closure both ways, id-vs-audio integrity (a hand-edited ogg trips it), the manifest schema gate, the dangling-dread report, and then the reach audit.
 
@@ -82,7 +82,7 @@ The manifest row key is `<category>/<name>`, category-qualified because one pack
 
 The corpus of record is `tools/manifest.json`.
 Each committed row is one per sound ever gathered. It holds its origin pack and path, every collapsed duplicate's (pack, path), and the pre-fold AUTHOR blob.
-The row also carries the spawn band and its provenance (same-author / dup-pack / other-pack / unwired), height, indoor, the veto strings, fold and slice lineage, duration, and fingerprint.
+The row also carries the spawn band and its provenance (same-author / dup-pack / other-pack / unwired), height, indoor, the exclusion strings, fold and slice lineage, duration, and fingerprint.
 A `seq` ordinal keeps every emit byte-stable. Rejected sounds stay as rows (status plus fingerprint), so the next gather flags a re-encode of a reject and keeps it out.
 The manifest is why the packs are deletable. Master recomputes everything from it.
 
@@ -98,7 +98,7 @@ Identity is decided by the waveform. There are four stages, cheapest first, so t
 
 - md5: byte-identical reships across packs collapse to one.
 - audio hash (n124): among the md5 survivors, files identical in AUDIO but differing only in their comment blob (a reship with a different volume or distance) collapse here (`_hash_audio`,
-  exact and blob-agnostic), before the fuzzy stage that can miss them. Every collapsed path goes into the survivor's `dups` for the veto.
+  exact and blob-agnostic), before the fuzzy stage that can miss them. Every collapsed path goes into the survivor's `dups` for the exclusion.
 - Chromaprint fingerprint (`fpcalc`, >= 0.88): stable across bitrate and codec, so it finds the re-encoded copies md5 misses. Its same-versus-distinct ranges overlap,
   so it only proposes candidate pairs and never decides.
 - PCM cross-correlation (`DEDUP_XCORR` = 0.90): decode both, line them up by envelope offset, and correlate over the overlap. A re-encode scores near 1.0 and a distinct sound near 0.
@@ -110,7 +110,7 @@ copy of that sound across every source we pull. The low-bitrate tail is old SoC-
 kept because re-encoding cannot restore detail the source never captured. Modern packs contribute none.
 
 This runs among the source packs only, within a pack and between the packs we pull from. DiegeticDread does not deduplicate against the target modpack.
-It never drops a sound because the install already plays it. Doubling with the base is handled by the static DLTX veto overlay at config load.
+It never drops a sound because the install already plays it. Doubling with the base is handled by the static DLTX exclusion overlay at config load.
 
 ## Byte-for-byte audio, author's blob unchanged
 
@@ -262,7 +262,7 @@ and a **placement pull** (`play_sound` moves the rolled spawn distance up to 20%
 
 The base game's `update_ambient` code places each emitted sound.
 `get_placement` clones its placement and volume math (`sound_ambient.script`), fed the sound's OWN source-channel values from the config.
-gather harvests the channel SPAWN band (`ch_min`/`ch_max`) from the same channel files the veto reads, and freezes it in the manifest, SAME-AUTHOR.
+gather harvests the channel SPAWN band (`ch_min`/`ch_max`) from the same channel files the exclusion reads, and freezes it in the manifest, SAME-AUTHOR.
 The band comes from the same pack as the shipped copy's blob. Blob and placement must be one author's pair, or the combination reproduces nobody's mix.
 Fallbacks run in order: a collapsed duplicate's own pack, then any pack wiring the path, then the UNWIRED fallback.
 The UNWIRED fallback gives the sound its CATEGORY CENTER, the median of that category's wired bands, or of its own blobs when nothing in it is wired.
@@ -358,15 +358,15 @@ the underground mega-bucket becomes `labs` (`underground` is now only the enclos
 `creak` becomes `foliage`, and vermin split into `rats` and `bats`. A category is split only along a filter axis the runtime acts on (env, per-map zone, presence),
 which is why the four zones are separate categories but the underground kinds collapse into `labs`.
 
-## The base-veto: static DLTX removal, plus a logging observer
+## The base-exclusion: static DLTX removal, plus a logging observer
 
 The base game's System B (Lua `sound_ambient.update_ambient`) plays the rotating dread and atmosphere sounds, the vanilla "fake" spooks, drones, and distant-mutant growls.
 If the player also runs a soundscape pack the mod drew from, the base plays the same sounds the director does, so they double.
 DiegeticDread removes its own sounds from the base's ambient channels STATICALLY, at config load. It runs no muting loop at runtime.
 
-### Static removal (the muting)
+### Static removal (the exclusion)
 
-`master` generates a DLTX overlay, `configs/environment/mod_sound_channels_diegeticdread.ltx`, from the manifest's veto rows. It is derived from the pipeline's OWN record, the chosen corpus,
+`master` generates a DLTX overlay, `configs/environment/mod_sound_channels_diegeticdread.ltx`, from the manifest's exclusion rows. It is derived from the pipeline's OWN record, the chosen corpus,
 rather than from any installed pack. Every shipped sound was captured from a registry source (`tools/sources.yaml`) at a known path, and a source wires that path to a channel only in its own config,
 the same file a user running that pack loads. So for each shipped sound the generator reads its origin pack's channel files and emits, for every channel that lists the path,
 `![channel]` plus `<sounds = <path>`, a per-item DLTX removal (`Xr_ini.cpp`, the Remove op) that strips exactly that sound from the channel's `sounds` list and leaves the channel's other sounds.
@@ -380,12 +380,12 @@ and it survives anything at runtime, since there is no slot to lose.
 - Identity is the SOURCE PATH rather than a runtime file hash. The generator matches each chosen sound's recorded path against its origin pack's channel entries.
   It never scans an install or hashes a played file. The same recording often ships in several source packs, byte-identical or a re-encode,
   and dedup collapses those copies to one while keeping the (pool, source_path) of every collapsed copy on the survivor (`dups`, set in `dedupe`, folded across categories by `_fold_dups`).
-  Those copies are the SAME recording, confirmed by the PCM cross-correlation decider under complete linkage (I3). The veto removes each copy at its own pack's path,
+  Those copies are the SAME recording, confirmed by the PCM cross-correlation decider under complete linkage (I3). The exclusion removes each copy at its own pack's path,
   so whichever source pack the player runs, that pack's copy of the sound is taken out. Coverage is per sound across every pack we drew it from.
 - Every ambient channel file is read per source: `sound_channels.ltx`, `ambient_channels/backgrounds.ltx`, and `ambient_channels/blowout_channels.ltx` (`_source_channels_raw`). The bed files matter.
   Packs file our captured `whisper_*` and `underground_*` into CONTINUOUS beds in `backgrounds.ltx`, which would double under the director if only `sound_channels.ltx` were read.
 - Per-SOUND by design, never per-channel. A base spook the mod did NOT capture (dropped by dedup or the loudness cull, so it was never shipped) stays in its channel and still plays.
-  The veto owns only what the director ships, and the base keeps the rest, so a channel goes silent only when every sound in it is ours.
+  The exclusion owns only what the director ships, and the base keeps the rest, so a channel goes silent only when every sound in it is ours.
   This is deliberate. The base's own uncaptured atmosphere is not ours to remove. Verified: `out_screams` removes 24 of its 25 base screams (exactly the captured ones),
   leaving `sound_13` (uncaptured).
 - A shipped sound with no removal is not a gap. Structural capture pulls whole folder trees, not the channel-wired files alone (I6),
@@ -410,7 +410,7 @@ not only at DEBUG. It is a clone of the vanilla channel rotation, timing, and vo
 so a base sound is not cut on channel re-fire the way vanilla's retained-handle GC cut it, and it LOGS each base fire at DEBUG (`[BASE]` lines and the HUD BASE row).
 It does no muting (the composed config it reads already has our sounds removed) and no injection. It is not there only to log. It owns the base ambience for everyone.
 The log plus the no-cut are what it adds over leaving vanilla in place. If another ambient-scheduler mod wins the slot back, only the trace and the no-cut are lost.
-The muting still holds because it is the static overlay, independent of this hook.
+The exclusion still holds because it is the static overlay, independent of this hook.
 This slot (`sound_channels`/`update_ambient`) is separate from the director's own 100ms loop slot (`dd_director`/`tick`), so the two never share.
 
 ## Preservation and proof
@@ -433,7 +433,7 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 - I1 Play once, no loops. The director fires every sound once through `xsound.play_at` (retained handle, stoppable). There is no loop layer and no continuous bed. A long sound plays on a long period,
   tuned to its measured duration.
 - I2 No channels for our content. Sounds live FLAT in category directories (`zs/<category>/<name>.ogg`) and are named by the sound config (`dd_sound_metadata.script`),
-  with dread the per-sound `dd_spooks_metadata` override. The deploy defines no `sound_channels.ltx` channels for our content, and the only config it writes is the DLTX veto overlay,
+  with dread the per-sound `dd_spooks_metadata` override. The deploy defines no `sound_channels.ltx` channels for our content, and the only config it writes is the DLTX exclusion overlay,
   which REMOVES our sounds from existing base channels and never adds one. The engine ambient bed and its asserted channels stay intact, so nothing can cause a missing-channel crash.
 - I3 Deduplicate by the waveform, source side only. md5 then Chromaprint fingerprint then PCM cross-correlation, complete linkage at 0.90. Distinct variety is never merged.
   Deduplication runs among the source packs, never against the target modpack.
@@ -451,9 +451,9 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
   It never adds a channel and never injects a sound into the base ambient. The base's other sounds are untouched.
 - I9 Dark scope only. Keep spook, horror, underground, eerie, and oppressive weather. Leave generic daytime life and the base weather bed to the base ambience.
 - I10 Leave emission alone. Blowout and psi-storm are their own system and are never touched.
-- I11 Reproducible. master regenerates every emitted artifact (blobs, `dd_sound_metadata`, the veto overlay) from the manifest deterministically - same inputs, same bytes, no packs.
+- I11 Reproducible. master regenerates every emitted artifact (blobs, `dd_sound_metadata`, the exclusion overlay) from the manifest deterministically - same inputs, same bytes, no packs.
 - I12 Traceable. Every shipped sound resolves to its origin via `provenance.tsv`. Every source file resolves to a ledger category. Credit every source pack, author, and link in the readme.
-- I13 The director owns its own play slot only while active. Without xlibs the director is inert (no play), but the veto still holds because it is the static DLTX overlay, independent of xlibs.
+- I13 The director owns its own play slot only while active. Without xlibs the director is inert (no play), but the exclusion still holds because it is the static DLTX overlay, independent of xlibs.
   The observer clone resets on hour, level, or weather change, so it never replays a channel for the wrong level, and it guards every value an engine call needs.
 
 ## MCM and trace
@@ -461,7 +461,7 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 Scripts add control, an in-game trace, and the MCM, mirroring the alife-family pattern (`dd_mcm`, `dd_debug`, `xmcm`, `xlog`). All are guarded. Without xlibs they degrade to no-ops.
 
 - `dd_director.script` owns the director (its own `dd_director`/`tick` slot), the score, the pick and pace, the positioned play, and the base-ambient observer (the separate `update_ambient` slot,
-  with the muting itself the static DLTX overlay the deploy generates).
+  with the exclusion itself the static DLTX overlay the deploy generates).
 - `dd_hud.script` is the debug HUD (off by default), a three-column readout built from `dd_director.get_hud_rows`.
 - `ui_dd_player.script` is the review and curation tool (gated by the MCM `sound_player` toggle): a standalone keyboard-owning 2D `CUIScriptWnd` modal opened by PageDown (not a PDA tab),
   reusing `ui_dd_player.xml`.
@@ -489,7 +489,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
 - Committed data: `tools/sources.yaml` (the authored gather config: registry, routes, excludes), `tools/manifest.json` (the corpus record), `tools/measure_cache.json`
   (audio-hash-keyed lufs/crest/peak/dur/fingerprint), `ledger.tsv` (the historical full-coverage proof), `provenance.tsv` (origin of every shipped sound, appended per gather).
 - The tool is `diegetic-manager` in stalker-dev, and this repo holds data only. `gather DiegeticDread <Source>` is the once-per-pack ingest, and `master DiegeticDread` is the forever path
-  (blobs, metadata, veto, verify, audit) with no packs required.
+  (blobs, metadata, exclusion, verify, audit) with no packs required.
 
 A new pack is adopted by hand first. Audition it, author its `sources.yaml` rows (registry entry + route rows), then run `gather DiegeticDread <Source>`.
 The coverage proof (UNUSED-DARK = 0) audits the authoring, and the pack is deletable once the committed proof rows land.
