@@ -694,7 +694,7 @@ local function update_config()
 end
 
 --- Load banks, arm the ticks. Runs on every actor_on_first_update, so a save load re-arms the timers.
---- Inert without xlibs (xsound). The veto still holds - it is the static DLTX overlay.
+--- Inert without xlibs (xsound). The exclusion still holds - it is the static DLTX overlay.
 local function _on_first_update()
     update_config()
     if not xsound then dd_debug.warn("dd_director: xlibs (xsound) absent - director inert"); return end

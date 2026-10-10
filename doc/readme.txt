@@ -46,12 +46,12 @@ It is a dread director, driven by where you stand and who is near. It answers th
 No random timers, no scripts. The soundscape follows the real state of the game around you.
 Some of its horror is interior audio Shrike made for Dark Signal and never released, given straight to this mod.
 
-DiegeticDread plays the horror and vetoes it from the base channels. DiegeticAmbience owns the living nature-and-weather bed it leaves alone.
+DiegeticDread plays the horror and excludes it from the base channels. DiegeticAmbience owns the living nature-and-weather bed it leaves alone.
 Run both and the Zone is real and frightening at once.
 
 It works in three parts.
 A director reads the Zone and plays to it.
-A veto keeps it from doubling the base ambience.
+An exclusion keeps it from doubling the base ambience.
 A measured pipeline builds the sound library.
 It needs xlibs to play the sounds. Without xlibs it is inert.
 
@@ -95,7 +95,7 @@ Every sound is mono, the only form the engine places in 3D, so nothing sticks fl
 A long drone or the radio signal plays as a spaced sound on a long period.
 
 
-2. The veto
+2. The exclusion
 
 If you also run a soundscape pack it drew from, that pack's ambient plays the same sounds.
 DiegeticDread removes its own sounds from the base's ambient channels, so only its curated version plays, under its director.
@@ -168,8 +168,8 @@ MCM (shows the settings and the trace)
 Compatibility:
 Depends only on xlibs. Install and uninstall mid-save work. Tested: Anomaly 1.5.3, GAMMA, EFP, Zona, Forgotten Zone.
 Coexists:
-- Any soundscape pack (Soundscape Overhaul, Dark Signal, and the rest) - the veto strips DiegeticDread's own sounds from the base channels at load, so nothing doubles.
-- DiegeticAmbience - DiegeticDread plays the horror and vetoes it from the base channels, DiegeticAmbience owns the nature-and-weather bed, and the two never double.
+- Any soundscape pack (Soundscape Overhaul, Dark Signal, and the rest) - the exclusion strips DiegeticDread's own sounds from the base channels at load, so nothing doubles.
+- DiegeticAmbience - DiegeticDread plays the horror and excludes it from the base channels, DiegeticAmbience owns the nature-and-weather bed, and the two never double.
 Everything else coexists, as long as it extends X-Ray and Anomaly and never overrides them.
 
 How It's Built:
