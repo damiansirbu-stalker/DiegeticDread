@@ -366,42 +366,30 @@ DiegeticDread removes its own sounds from the base's ambient channels STATICALLY
 
 ### Static removal (the exclusion)
 
-`master` generates a DLTX overlay, `configs/environment/mod_sound_channels_diegeticdread.ltx`, from the manifest's exclusion rows. It is derived from the pipeline's OWN record, the chosen corpus,
-rather than from any installed pack. Every shipped sound was captured from a registry source (`tools/sources.yaml`) at a known path, and a source wires that path to a channel only in its own config,
-the same file a user running that pack loads. So for each shipped sound the generator reads its origin pack's channel files and emits, for every channel that lists the path,
-`![channel]` plus `<sounds = <path>`, a per-item DLTX removal (`Xr_ini.cpp`, the Remove op) that strips exactly that sound from the channel's `sounds` list and leaves the channel's other sounds.
-The composed `sound_channels.ltx` the game loads no longer lists our sounds, so vanilla's own `update_ambient` (and the engine bed) never plays them. It is deterministic, engine-native,
-and it survives anything at runtime, since there is no slot to lose.
+`master` emits a DLTX overlay, `configs/environment/mod_sound_channels_diegeticdread.ltx`, from the manifest's exclusion rows. For every channel that lists one of our sounds it writes `![channel]`,
+a `<sounds = <path>` per removed item (`Xr_ini.cpp`, the Remove op), and `>sounds = ambient\no_sound`. The composed `sound_channels.ltx` the game loads no longer lists our sounds, so vanilla's
+`update_ambient` and the engine bed never play them. It is engine-native and survives anything at runtime, since there is no slot to lose.
 
-- Complete by construction, install-independent. The overlay excludes every sound we ship at every source path we drew it from.
-  A user running one of our source packs has that pack's identical channels, so our removal applies. A pack we never sourced holds none of our audio, so there is nothing of ours to double there.
-  Coverage does not depend on the build machine's modlist. The wiring is harvested once per pack at gather (the exact strings, per pack and channel),
-  and the overlay is regenerated from the manifest on every `master`, like every other emitted artifact (I11).
-- Identity is the SOURCE PATH rather than a runtime file hash. The generator matches each chosen sound's recorded path against its origin pack's channel entries.
-  It never scans an install or hashes a played file. The same recording often ships in several source packs, byte-identical or a re-encode,
-  and dedup collapses those copies to one while keeping the (pool, source_path) of every collapsed copy on the survivor (`dups`, set in `dedupe`, folded across categories by `_fold_dups`).
-  Those copies are the SAME recording, confirmed by the PCM cross-correlation decider under complete linkage (I3). The exclusion removes each copy at its own pack's path,
-  so whichever source pack the player runs, that pack's copy of the sound is taken out. Coverage is per sound across every pack we drew it from.
-- Every ambient channel file is read per source: `sound_channels.ltx`, `ambient_channels/backgrounds.ltx`, and `ambient_channels/blowout_channels.ltx` (`_source_channels_raw`). The bed files matter.
-  Packs file our captured `whisper_*` and `underground_*` into CONTINUOUS beds in `backgrounds.ltx`, which would double under the director if only `sound_channels.ltx` were read.
-- Per-SOUND by design, never per-channel. A base spook the mod did NOT capture (dropped by dedup or the loudness cull, so it was never shipped) stays in its channel and still plays.
-  The exclusion owns only what the director ships, and the base keeps the rest, so a channel goes silent only when every sound in it is ours.
-  This is deliberate. The base's own uncaptured atmosphere is not ours to remove. Verified: `out_screams` removes 24 of its 25 base screams (exactly the captured ones),
-  leaving `sound_13` (uncaptured).
-- A shipped sound with no removal is not a gap. Structural capture pulls whole folder trees, not the channel-wired files alone (I6),
-  so a sound the pack never lists in any channel is still captured and shipped, with nothing to remove. The base plays it through no channel.
-  The overlay header reports the split (source paths wired-and-removed versus folder-only) so coverage is visible.
-- Bed-empty guard: every removed-from channel also gets `>sounds = ambient\no_sound`, so a full removal never empties a System A bed (it asserts on empty `sounds`, `Environment_misc.cpp`).
-  no_sound is silent, so a partially-removed channel is only marginally diluted.
-- One-time cost, none at runtime. DLTX composes the overlay into `sound_channels.ltx` once at config load and caches the merged result (`Xr_ini.cpp`). Nothing re-applies it per frame,
-  the base observer caches the parsed channels per level/hour/weather reset, and the ambient reads the shorter composed list, so the removals add no runtime cost however many there are.
-  An absent channel or path on the player's install is warn-and-discard at load.
-- An absent channel is safely ignored by DLTX (warn-and-discard, no CTD, `Xr_ini.cpp`). The standalone builds under `stalker_anomaly_mods/game_builds_for_sound` ship no Anomaly channel config,
-  so a sound sourced only from them has no wiring to remove. If the same audio also came from an Anomaly pack, that pack's sibling path carries the removal.
+Identity is the AUDIO SIGNATURE, never the path. A channel entry is ours when its ogg matches the corpus by `hash_audio` (md5 of the vorbis pages, blob-agnostic), or, for a re-encode md5 misses,
+by the fuzzy rule: chromaprint `fp_similarity` >= 0.88 confirmed by PCM `pcm_correlation` >= 0.90, the same three-stage identity as dedup (I3). A re-leveled or re-encoded copy is still caught, and the
+generic `sound_NN` names that many packs share are disambiguated by audio, not by their shared path.
 
-The removal is on the sound's own source path, emitted as the source config wrote it (original case and backslashes) so it matches the base list item exactly.
-The engine removes by exact string (`Xr_ini.cpp`), and because the overlay is built from the source pack's own config, that string is byte-identical to what a user running the pack loads.
-There is no folder blocking, no mod names, no runtime lookup, and no `provenance.tsv`.
+What to remove is decided by scanning every installed channel LAYOUT at gather (`_harvest_exclusion_union`): each registry source that ships `sound_channels.ltx` + `ambient_channels/*.ltx`, plus
+the sibling ambience layout. For each channel entry the resolver reads the ogg on disk and tests the signature; a match records `(layout, channel, raw)` on the row, additive. Reading the real
+layout is what catches a pack that re-homed our sound to another channel (the sibling ambience layout's re-homed `ambient_urban`), which the old source-path harvest missed. The fuzzy pass runs only in a channel that
+already carries an exact match, so `fpcalc` never touches a bird or insect channel.
+
+The overlay is the UNION across layouts, formed by channel at emit: a path is removed where it is ours in any layout. DLTX removes by exact string and warn-discards an absent channel or path
+(`Xr_ini.cpp`), so the one overlay is correct on any install, each seeing only its own subset apply. Union is chosen over intersection because its failure is over-removal, a distinct base clip going
+silent, rare and inaudible under the director's own dread, rather than doubling, the defect the exclusion exists to kill. The residual is the generic `sound_NN` collision: a path carrying our audio in
+one pack and a distinct recording in another is removed on both, a handful of clips, accepted.
+
+Bed-empty guard: every touched channel gets `>sounds = ambient\no_sound` in the SAME emit loop as its removals, so a full removal never empties a System A bed (it asserts on empty `sounds`,
+`Environment_misc.cpp`). A build-fail gate (`verify`) simulates the overlay against every layout and fails `master` if any touched channel ends empty without the guard, so the CTD invariant cannot
+regress. The exclusion owns only what the director ships: a base sound the mod never captured stays in its channel and plays, and a channel goes silent only when every sound in it is ours.
+
+The decision is frozen in the manifest at gather and emitted packless at master, like every other artifact (I11). The standalone sound-only builds ship no channel config, so a sound sourced only from
+them has no wiring to remove; if the same audio also came from an Anomaly pack, that pack's sibling path carries the removal. There is no folder blocking, no mod names, and no runtime lookup.
 
 ### The observer hook (owns the vanilla scheduler slot)
 
@@ -452,6 +440,7 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 - I9 Dark scope only. Keep spook, horror, underground, eerie, and oppressive weather. Leave generic daytime life and the base weather bed to the base ambience.
 - I10 Leave emission alone. Blowout and psi-storm are their own system and are never touched.
 - I11 Reproducible. master regenerates every emitted artifact (blobs, `dd_sound_metadata`, the exclusion overlay) from the manifest deterministically - same inputs, same bytes, no packs.
+  The exclusion's per-layout signature decision is frozen in the manifest at gather; master unions and emits it.
 - I12 Traceable. Every shipped sound resolves to its origin via `provenance.tsv`. Every source file resolves to a ledger category. Credit every source pack, author, and link in the readme.
 - I13 The director owns its own play slot only while active. Without xlibs the director is inert (no play), but the exclusion still holds because it is the static DLTX overlay, independent of xlibs.
   The observer clone resets on hour, level, or weather change, so it never replays a channel for the wrong level, and it guards every value an engine call needs.
