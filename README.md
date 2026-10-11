@@ -21,7 +21,7 @@ Requires: Anomaly 1.5.3, the modded exes (for DLTX), [xlibs](https://www.moddb.c
 
 ## Documentation
 
-- [readme.txt](doc/readme.txt) - full description, the director, the veto, credits
+- [readme.txt](doc/readme.txt) - full description, the director, the exclusion, credits
 - [architecture.md](doc/architecture.md) - method, invariants, build pipeline
 - [licensing.md](doc/licensing.md) - per-addon licence and permission
 

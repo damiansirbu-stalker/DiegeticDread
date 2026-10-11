@@ -99,7 +99,7 @@ A long drone or the radio signal plays as a spaced sound on a long period.
 
 If you also run a soundscape pack it drew from, that pack's ambient plays the same sounds.
 DiegeticDread removes its own sounds from the base's ambient channels, so only its curated version plays, under its director.
-It does this statically at config load, with a generated overlay that strips each of the mod's sounds out of every base channel that lists it, at the path each source pack files it under.
+It does this statically at config load, with a generated overlay that strips each of the mod's sounds out of every base channel that plays it, matched by the sound's own audio rather than by a filename.
 A sound can ship in more than one pack. The copies include exact reships and re-encodes. It removes every one. Whichever pack you run, the base loses its version.
 The base keeps everything else it plays.
 It removes exact sounds only. It leaves every folder, channel, wind bed, and creature call the mod does not carry.
