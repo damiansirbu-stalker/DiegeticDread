@@ -116,7 +116,7 @@ It never drops a sound because the install already plays it. Doubling with the b
 
 A MONO sound's AUDIO ships byte for byte with no re-encode, the vorbis pages untouched. What the deploy writes is only the X-Ray ogg comment blob (min distance, max distance, base_volume),
 a lossless header-page rewrite (`_write_blob`), so the audio pages stay byte-identical. A STEREO sound is the exception. The engine cannot 3D-position it,
-so the deploy folds it to mono (`_masterize_channels`, re-encoded, booked "cut"), then writes the blob. Its author's blob is captured from the source BEFORE the fold strips it (`src_blob`),
+so gather folds it to mono (`fold.fold_to_mono`, re-encoded, booked "cut"), then writes the blob. Its author's blob is captured from the source BEFORE the fold strips it (`src_blob`),
 so the fold does not lose the author's values.
 
 Blob contract (the engine-read fields). The `0x0003` comment struct (`SoundRender_Source_loader.cpp`) holds five fields: `min`, `max`, `base_volume`, `game_type`, and `max_ai_dist`.
@@ -312,7 +312,7 @@ The engine computes the audible gain per play (`SoundRender_Emitter_FSM.cpp`):
   The AUTHOR's min/max sit in the blob (the engine reads them) and in the config (the trace readout).
 - **stereo** - the engine force-2Ds any 2-channel buffer (`Core.cpp`: `channels==2 -> switch_to_2D`), and the 2D path skips BOTH attenuation and occlusion (`Emitter_FSM.cpp`:
   `volume_att = p_source.volume`, `occ = 1`), so a stereo sound plays at-ear at full loudness wherever it is placed, the "one sound too loud" blare. Only MONO is spatialised,
-  so the deploy FOLDS every stereo file to mono (`_masterize_channels` -> `sp.to_mono`: sum (L+R)/2, or drop a channel for an anti-phase pair). Proven from the source.
+  so gather FOLDS every stereo file to mono (`fold.fold_to_mono`: sum (L+R)/2, or drop the left channel for an anti-phase pair, chosen by `fold.stereo_method`). Proven from the source.
 
 ### Coexistence with a base soundscape - the loudness balance
 
@@ -431,7 +431,7 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
   the min_distance floor (fixing the field the pack tooling left at the unset default) and the base_volume loudness floor (lifting content too quiet to be audible). See "Byte-for-byte audio".
   A file that never carried a blob gets its category-folder median, then the same floors. Two steps re-encode and are booked "cut":
   a `dark_signal` bed too long for the emission window is sliced into desilenced pieces,
-  and every STEREO file is folded to mono (`_masterize_channels`) because the engine 3D-positions mono only (its author's blob is captured pre-fold and re-written,
+  and every STEREO file is folded to mono (`fold.fold_to_mono`) because the engine 3D-positions mono only (its author's blob is captured pre-fold and re-written,
   so the fold does not lose the author's values).
 - I6 Capture from folder trees, not the wired files alone. The ledger proof is what drives UNUSED-DARK to 0.
 - I7 Selection is manual and per-pack. A pack's folders are mapped to categories by hand in `ROUTE` after the pack is assessed. The folder-path match only pulls.
