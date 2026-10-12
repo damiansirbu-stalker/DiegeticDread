@@ -390,9 +390,17 @@ local function _collect_monsters(actor)
     return out
 end
 
---- Anomaly within range of the actor (proven scan over db.anomaly_by_name).
+--- Any hazard anomaly within range of the actor (xsmart hazard scan), cached 10s via xttltable.
+local _anom_cache
 local function _read_anomalies(actor)
-    return (xsmart and xsmart.is_anomaly_near and xsmart.is_anomaly_near(actor:position(), NEAR_R)) or false
+    if not _anom_cache and xttltable then _anom_cache = xttltable.create_ttl_table({ default_ttl = 10 }) end
+    if _anom_cache then
+        local cached = _anom_cache:get("near")
+        if cached ~= nil then return cached end
+    end
+    local near = (xsmart and xsmart.is_hazard_anomaly_near and xsmart.is_hazard_anomaly_near(actor:position(), NEAR_R)) or false
+    if _anom_cache then _anom_cache:set("near", near) end
+    return near
 end
 
 --- Time band for the current hour.
