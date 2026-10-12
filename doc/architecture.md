@@ -188,7 +188,7 @@ later (n118), EVENT (bumped by callbacks, decayed). A sensor's fields match what
 - `monsters` - one pass over `xcreature.iterate_online_monsters` (`_collect_monsters`): a demonized `db.OnlineMonsters` id-array when present,
   else a best-effort `is_mutant` walk capped at `MONSTER_ITER_CAP` online objects so the scan stays bounded under soak (a monster past the cap is missed),
   where the registry PR is the parity fix (n119): `online` (the mutant gate), `enemy_near` (strongest near monster as a power).
-- `anomalies` - `near` (an anomaly within range, `xsmart.is_anomaly_near`), the drone gate.
+- `anomalies` - `near` (a hazard anomaly within range, `xsmart.is_hazard_anomaly_near`), the drone gate.
 
 ### Power - man and monster on one scale
 
