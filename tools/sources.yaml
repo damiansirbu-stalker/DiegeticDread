@@ -1,4 +1,4 @@
-# sources.yaml - the authored gather config (diegetic-manager reads this; spec 3.1b).
+# sources.yaml - the authored gather config (sound-manager reads this; spec 3.1b).
 # GATHER EXECUTES AUTHORED JUDGMENT: audition a pack BY HAND, author its rows here,
 # then `gather` pulls mechanically and the ledger proves the authoring complete.
 # ORDER IS LOAD-BEARING: dedup and band-provenance rank follow this list order.

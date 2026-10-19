@@ -5,7 +5,7 @@ It gathers dark and eerie sounds from community soundscape packs, then measures 
 A runtime director reads where the player stands and who is near.
 It does not add engine ambient channels and it does not edit an ambient file. It plays its own sounds, and it mutes the base game's copy of any sound it also ships.
 
-This document is the method and the invariants. The build tool is `diegetic-manager` in stalker-dev, and this repo holds only data. `tools/sources.yaml` is the authored gather config,
+This document is the method and the invariants. The build tool is `sound-manager` in stalker-dev, and this repo holds only data. `tools/sources.yaml` is the authored gather config,
 `tools/manifest.json` the corpus record, and `tools/measure_cache.json` plus the committed proofs round it out. The tool reproduces every number below.
 
 ## Model: a single-sound director, no channels
@@ -36,7 +36,7 @@ The category list is the single source of truth.
 
 ## Content pipeline (reproducible)
 
-`diegetic-manager` runs two phases with a hard boundary. GATHER (`gather DiegeticDread <Source>`) is the only phase that reads a source pack. It executes the authored `tools/sources.yaml`
+`sound-manager` runs two phases with a hard boundary. GATHER (`gather DiegeticDread <Source>`) is the only phase that reads a source pack. It executes the authored `tools/sources.yaml`
 (registry + route rows), routes, gates 44100, folds stereo, slices the long `dark_signal` beds, culls dead files, and dedups by waveform against itself and the manifest. It freezes everything the
 pack can ever tell us into `tools/manifest.json` - author blob, spawn band, height, indoor, exclusion wiring, origin, every collapsed duplicate's path. Its per-pack coverage proof (UNUSED-DARK = 0) and
 provenance rows commit as the record, and after they pass the pack is deletable. Gather is idempotent, so a re-run of an ingested pack changes nothing. MASTER (`master DiegeticDread`) never touches a
@@ -72,7 +72,7 @@ The `UNUSED-DARK = 0` ledger invariant then confirms the hand-written rules capt
 The source list is the registry in `tools/sources.yaml`: one declarative entry per pack with `name`, local `path`, reference `url`, and `licence`, order preserved (dedup and band-provenance
 rank are order-sensitive). Entries are never deleted after gather - the path may go stale, the licence/credit record stays. Sources are ALWAYS pulled locally by hand, and the pipeline never
 downloads. The `url` is a credit and provenance reference only. A licence gate stops a gather FROM any source not cleared (`licence: pending`).
-The `diegetic-manager provision DiegeticDread` command reports each source present or MISSING, and a missing pack blocks only ITS gather - master never needs one.
+The `sound-manager provision DiegeticDread` command reports each source present or MISSING, and a missing pack blocks only ITS gather - master never needs one.
 
 ### Identity and the corpus of record
 
@@ -469,7 +469,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
 
 ## Tools and data artifacts
 
-- The measured surface, the shared audio core in `diegetic-manager/core/` (stalker-dev), tools from `$PORTX_ROOT/packages`. One `ffmpeg` `astats`+`ebur128` pass reads `lufs` (integrated loudness),
+- The measured surface, the shared audio core in `sound-manager/core/` (stalker-dev), tools from `$PORTX_ROOT/packages`. One `ffmpeg` `astats`+`ebur128` pass reads `lufs` (integrated loudness),
   `crest` (peak minus RMS), and `peak` (true peak). `ffprobe` reads `dur`, `sample_rate`, `channels`, and `bit_rate`. Chromaprint `fpcalc` reads the fingerprint `fp`, and the fold reads mid/side RMS.
 - Where each value is used. Pipeline-time, each drives one step: `lufs`/`crest` the base_volume loudness floor and (`crest`) the min-distance ratio, `peak` the dead-file decode-artifact clamp,
   `dur` the long-file cull and the `dark_signal` slice, `sample_rate` the 44100 fitness gate, `channels` the stereo fold, `bit_rate` the dedup quality-winner pick, `fp` the dedup candidate stage
@@ -477,7 +477,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
   `xsound.compute_delivered_loudness` for the `[PLAY]`/`[BASE]` trace and the review player, and `ch_min`/`ch_max`/`h`/`indoor` feed the director's `get_placement`.
 - Committed data: `tools/sources.yaml` (the authored gather config: registry, routes, excludes), `tools/manifest.json` (the corpus record), `tools/measure_cache.json`
   (audio-hash-keyed lufs/crest/peak/dur/fingerprint), `ledger.tsv` (the historical full-coverage proof), `provenance.tsv` (origin of every shipped sound, appended per gather).
-- The tool is `diegetic-manager` in stalker-dev, and this repo holds data only. `gather DiegeticDread <Source>` is the once-per-pack ingest, and `master DiegeticDread` is the forever path
+- The tool is `sound-manager` in stalker-dev, and this repo holds data only. `gather DiegeticDread <Source>` is the once-per-pack ingest, and `master DiegeticDread` is the forever path
   (blobs, metadata, exclusion, verify, audit) with no packs required.
 
 A new pack is adopted by hand first. Audition it, author its `sources.yaml` rows (registry entry + route rows), then run `gather DiegeticDread <Source>`.
