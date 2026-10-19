@@ -106,7 +106,7 @@ Identity is decided by the waveform. There are four stages, cheapest first, so t
 
 The survivor of every collapsed group is the HIGHEST-BITRATE copy (`dedupe`: `max(group, key=bitrate)` at the md5, audio-hash, and cross-correlation stages),
 and a sub-`LOWQ_BITRATE` (32 kbps) file is dropped only when its category keeps something better (`good if good else chosen`). So a low-bitrate survivor is the best, or the only,
-copy of that sound across every source we pull. The low-bitrate tail is old SoC-lineage source recordings (SoP, NLC, OGSE, Solyanka, DeadAir) that were never released higher,
+copy of that sound across every source we pull. The low-bitrate tail is old SoC-era source recordings that were never released higher,
 kept because re-encoding cannot restore detail the source never captured. Modern packs contribute none.
 
 This runs among the source packs only, within a pack and between the packs we pull from. DiegeticDread does not deduplicate against the target modpack.

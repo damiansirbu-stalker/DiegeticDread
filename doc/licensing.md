@@ -11,7 +11,7 @@ Freely licensed sources (Public Domain, Creative Commons) and GSC-original audio
 ## Sources used, and the basis for each
 
 - GSC original-game audio, community-tolerated (a pack that re-encodes GSC material does not own it).
-  Vanilla Anomaly 1.5.3, Dead Air, OGSE 0693, Prosector, Solyanka (NS OGSR), NLC Improved, OLR, Lost Alpha.
+  Vanilla Anomaly 1.5.3 and the old era builds that carry re-encodes of that material.
 - Dark Signal family, by Shrike. Amplified Soundscape and Vanilla Soundscape, plus his modular packs: Audio Pack, Mutants Audio, Blowout and Anomalies Audio, Weather and Ambiance Audio.
   PERMISSION granted 2026-08-15, Discord (shrike0555). https://www.moddb.com/members/shrike2
 - Shrike's own unreleased interior audio (slam, interior winds), material he made for Dark Signal and never released publicly, given to me personally for these mods.

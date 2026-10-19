@@ -189,8 +189,7 @@ It depends on no other mod, not even the author's own, and needs only X-Ray and 
 See the Health and JitProfiler links up top for every test and smoke result, and the mod's real CPU and allocation cost.
 
 Credits:
-Most of the sounds come from the original S.T.A.L.K.E.R. games and the standalone builds that carry and rework that audio.
-Those builds: Solyanka (NS OGSR), Dead Air, OGSE, Prosector, NLC, OLR, Lost Alpha.
+Most of the sounds come from the original S.T.A.L.K.E.R. games and the old builds that carry and rework that audio, remastered here.
 The rest is dark ambience from community soundscape packs, with thanks to their authors.
 Shrike made the Dark Signal family and Amplified Soundscape. Solarint made Soundscape Overhaul.
 Aphrodite_child and myRETUNE Antares made RETUNE. AniHVX made Audio Expansion.
