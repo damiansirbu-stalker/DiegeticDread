@@ -46,7 +46,7 @@ pack. It recomputes every blob from the manifest's AUTHOR values under the curre
 - gather: walk the source pack's sound tree and route each FILE to a category by its folder path (the `routes` rows of `sources.yaml`, a structural per-file allowlist).
   The packs ship far more dark content than they wire into a channel, so the folder trees are the source of truth over any config list. Gate on sample rate, fold stereo to mono
   (the engine 3D-positions mono only, and the author blob is captured BEFORE the fold strips it), drop dead files (true silence after the fold), and run the long-file pass.
-  A sound whose ACTIVE (silence-removed) length exceeds the max emission window is long-culled, any category; cutting a long bed into pieces makes new sounds and is a manual, documented step, never the gather.
+  A sound whose ACTIVE (silence-removed) length exceeds the max emission window is long-culled, any category; cutting a long bed into pieces makes new sounds and is a manual, documented step via the `cut` command (`sound-manager.py cut <Mod> <bed> <category>`), never the gather.
   Deduplicate by waveform against the pack and the manifest. Each duplicate's origin and wiring merges into the surviving row, net-new rows append, and the per-pack coverage proof then runs.
   Every dark file is shipped, booked (dead, long, off-rate, re-encode), or the gather FAILS with the repo untouched. Plan runs entirely in scratch.
   The tree and the manifest commit only after the coverage proof passes.
