@@ -115,13 +115,13 @@ The build is a reproducible pipeline, one command end to end.
 It measures every sound before it goes in.
 ffmpeg reads its integrated loudness in EBU R128 LUFS, its crest factor, and its true peak.
 ffprobe reads its duration, sample rate, channel count, and bitrate. Chromaprint fingerprints it, and the fold reads its mid and side energy.
-Each value has a use in the build below. Loudness and crest set the floor and the distance ratio. Peak guards the dead-file cull, and duration drives the long-file slice.
+Each value has a use in the build below. Loudness and crest set the floor and the distance ratio. Peak guards the dead-file cull, and duration drives the long-file cull.
 Sample rate holds the 44.1 kHz gate, channel count the fold, bitrate the duplicate pick, and the fingerprint and mid/side energy the dedup and fold.
 Six values are frozen into each sound's metadata and read back in game: its loudness, crest, peak, volume, and near and far distance.
 The director and the in-game trace read them to report how loud a sound arrives where it plays.
 The director also reads each sound's spawn band, height, and indoor flag to place it in 3D around and above you.
 Each pack's folders map to horror categories by hand, and the build pulls every file in them, so it misses nothing the pack buries.
-The build drops a sound too long to play whole. It slices the long radio-signal bed into short pieces.
+The build drops a sound too long to play whole. Cutting a long bed into pieces makes new sounds and is a manual step, not the build.
 Each file keeps its author's own loudness, the X-Ray gain set in the ogg comment, written back unchanged. No leveling.
 The authored levels are tight and field-tested in the source mods, so the corpus already plays even.
 Dread comes from where the director places a sound, not from re-leveling one file against the next.
@@ -144,8 +144,8 @@ Most of the rest carry an unset engine distance field that silences a sound more
 The build corrects that one field to the game's own far-ambience standard.
 Thousands of sounds that existed only as files on disk now play in the world, at their author's loudness, for the first time.
 A fitness gate keeps 44.1 kHz vorbis, the X-Ray standard, and accounts anything dropped.
-A ledger proves the build misses no dark sound.
-A provenance record maps every shipped sound back to its origin mod, folder, and name, self-verified by audio hash. Nothing loses its origin.
+A per-gather coverage check proves the build misses no dark sound.
+The record names no source mod or path; a sound's identity is its own audio.
 The director reads cheap signals every few seconds, never per frame, then caches them. The cost stays a slow timer whatever is on screen.
 
 
