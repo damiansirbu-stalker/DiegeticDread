@@ -5,8 +5,9 @@ It gathers dark and eerie sounds from community soundscape packs, then measures 
 A runtime director reads where the player stands and who is near.
 It does not add engine ambient channels and it does not edit an ambient file. It plays its own sounds, and it mutes the base game's copy of any sound it also ships.
 
-This document is the method and the invariants. The build tool is `sound-manager` in stalker-dev, and this repo holds only data. `tools/sources.yaml` is the authored intake config,
-and `dd_sound_metadata.script` is the corpus record AND the runtime table, one file. The tool reproduces every number below.
+This document is the method and the invariants. The build tool is `sound-manager` in stalker-dev, and this repo holds only the record (`dd_sound_metadata.script`) and the ogg tree.
+The authored intake recipe (registry + routes + excludes) is PRIVATE in the tool (`sound-manager/private/dread/recipe.yaml`), never in this public repo, so no source build is named here.
+`dd_sound_metadata.script` is the corpus record AND the runtime table, one file. The tool reproduces every number below.
 
 ## Model: a single-sound director, no channels
 
@@ -36,14 +37,14 @@ The category list is the single source of truth.
 
 ## Content pipeline (reproducible)
 
-`sound-manager` keeps two states - the ogg tree and ONE committed record, `dd_sound_metadata.script` - and runs two automatic commands with a hard boundary. INTAKE (`intake DiegeticDread <Source>`) is the only command that reads a source pack. It executes the authored `tools/sources.yaml`
+`sound-manager` keeps two states - the ogg tree and ONE committed record, `dd_sound_metadata.script` - and runs two automatic commands with a hard boundary. INTAKE (`intake DiegeticDread <Source>`) is the only command that reads a source pack. It executes the authored recipe
 (registry + route rows), routes, gates 44100, folds stereo, culls dead files and long beds, and dedups by waveform against itself and the record. It freezes the sound's own
 facts into the record - author blob, spawn band, height, indoor, fold and slice lineage, duration, fingerprint, measured loudness - resources-alone, with no source pack or path. Its per-pack coverage gate
 (UNUSED-DARK = 0) blocks the commit, and after it passes the pack is deletable. Intake is idempotent, so a re-run of an ingested pack changes nothing. REFRESH (`refresh DiegeticDread`) never touches a
 pack. It recomputes every blob from the record's AUTHOR values under the current floors (deterministic, tunable both directions), regenerates `dd_sound_metadata`, and runs verify
 (closure, integrity, schema) plus the reach audit. The base-exclusion overlay is hand-authored, not emitted here (see below). Dread curation is per-sound in `dd_spooks_metadata` rather than in the tree, so neither command touches it.
 
-- intake: walk the source pack's sound tree and route each FILE to a category by its folder path (the `routes` rows of `sources.yaml`, a structural per-file allowlist).
+- intake: walk the source pack's sound tree and route each FILE to a category by its folder path (the `routes` rows of the recipe, a structural per-file allowlist).
   The packs ship far more dark content than they wire into a channel, so the folder trees are the source of truth over any config list. Gate on sample rate, fold stereo to mono
   (the engine 3D-positions mono only, and the author blob is captured BEFORE the fold strips it), drop dead files (true silence after the fold), and run the long-file pass.
   A sound whose ACTIVE (silence-removed) length exceeds the max emission window is long-culled, any category; cutting a long bed into pieces makes new sounds and is a manual, documented step via the `cut` command (`sound-manager.py cut <Mod> <bed> <category>`), never the intake.
@@ -69,7 +70,7 @@ and its folders are mapped to categories by adding rows to `ROUTE` (the structur
 and anything unmatched is dropped (dark scope). There is no keyword classifier that decides scope on its own.
 The `UNUSED-DARK = 0` coverage invariant then confirms the hand-written rules captured every dark file the pack holds.
 
-The source list is the registry in `tools/sources.yaml`: one declarative entry per pack with `name`, local `path`, reference `url`, and `licence`, order preserved (dedup and the first-wins band
+The source list is the registry in the recipe: one declarative entry per pack with `name`, local `path`, reference `url`, and `licence`, order preserved (dedup and the first-wins band
 both read registry order). Entries are never deleted after intake - the path may go stale, the licence/credit record stays. Sources are ALWAYS pulled locally by hand, and the pipeline never
 downloads. The `url` is a credit and provenance reference only. A licence gate stops an intake FROM any source not cleared (`licence: pending`).
 The `sound-manager provision DiegeticDread` command reports each source present or MISSING, and a missing pack blocks only ITS intake - refresh never needs one.
@@ -273,7 +274,7 @@ The UNWIRED fallback gives the sound its CATEGORY CENTER, the median of that cat
 It adds a deterministic +/-25% jitter (seeded by the deployed name so a refresh never reshuffles), capped to the sound's own blob max so it is never placed past its silence point.
 This replaces an earlier own-blob fallback that flung a default 1-300 blob out to 150m.
 The category center places a folder-only sound where that category actually sits. Per-category plus the blob-max cap means no cross-category leak.
-Every cross-pack comparison follows the sources.yaml registry order, Shrike's latest Amplified line first, the same preference dedup uses to pick the winning copy,
+Every cross-pack comparison follows the recipe registry order, Shrike's latest Amplified line first, the same preference dedup uses to pick the winning copy,
 and within one pack the author's largest-max wiring wins.
 This goes through the vanilla transform, with min lifted to the band midpoint outdoors, then `random(min, max)/2`, a random bearing, `pos.y + height`,
 and the vanilla indoor/outdoor/underground volume table times the game ambient slider sets the play volume, with the MCM master `vol_global` on top (1.0 = untouched).
@@ -345,7 +346,7 @@ Players never see it, and it feeds off `dd_director.get_hud_rows`.
 
 A category is atomic, one coherent thing (one dread kind, one zone). The category is the unit of organization, the shipped folder (`zs/<name>/`, a flat directory of oggs,
 with dread the per-sound `dd_spooks_metadata` override) and the config key.
-**The pipeline category list carries only the name and the folder routing** (the `routes` rows of `tools/sources.yaml`, executed by the tool's dread seam) and holds no play rules.
+**The pipeline category list carries only the name and the folder routing** (the `routes` rows of the recipe, executed by the tool's dread seam) and holds no play rules.
 A category's runtime attributes (its `env` set, `requires` gate, per-map eligibility, and presence checks) live in the director (`dd_director`) and the per-map LTX, keyed by the category name.
 The config carries sound paths and per-sound values only, and the category NAME is the entire contract between the pipeline and the runtime.
 
@@ -477,12 +478,12 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
   `dur` the long-file cull, `sample_rate` the 44100 fitness gate, `channels` the stereo fold, `bit_rate` the dedup quality-winner pick, `fp` the dedup candidate stage
   (decided by PCM cross-correlation), mid/side RMS the fold sum-vs-drop split. Read at RUNTIME, both sets frozen in `dd_sound_metadata` at refresh: `lufs`/`crest`/`peak`/`bv`/`mn`/`mx` feed
   `xsound.compute_delivered_loudness` for the `[PLAY]`/`[BASE]` trace and the review player, and `ch_min`/`ch_max`/`h`/`indoor` feed the director's `get_placement`.
-- Committed data: `tools/sources.yaml` (the authored intake config: registry, routes, excludes) and `dd_sound_metadata.script` (the corpus record AND the runtime table, one file).
+- Committed data in this repo: `dd_sound_metadata.script` (the corpus record AND the runtime table, one file) and the ogg tree. The authored intake recipe (registry, routes, excludes) is private in the tool, `sound-manager/private/dread/recipe.yaml`.
   No manifest, no measurement cache, no provenance or ledger file: the measured facts live on each record row, dark coverage is proven per intake, and a sound's identity is its audio.
 - The tool is `sound-manager` in stalker-dev, and this repo holds data only. `intake DiegeticDread <Source>` is the once-per-pack ingest, and `refresh DiegeticDread` is the forever path
   (blobs, metadata, verify, audit) with no packs required. The base-exclusion overlay is hand-authored, not a refresh output; the tool's cross-mod layout scan is the knowledge it is written from.
 
-A new pack is adopted by hand first. Audition it, author its `sources.yaml` rows (registry entry + route rows), then run `intake DiegeticDread <Source>`.
+A new pack is adopted by hand first. Audition it, author its recipe rows (registry entry + route rows) in the private recipe, then run `intake DiegeticDread <Source>`.
 The coverage gate (UNUSED-DARK = 0) audits the authoring, and the pack is deletable once the committed record lands.
 
 ## Deploy
