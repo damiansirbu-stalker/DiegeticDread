@@ -37,19 +37,22 @@ The category list is the single source of truth.
 
 ## Content pipeline (reproducible)
 
-`sound-manager` keeps two states - the ogg tree and ONE committed record, `dd_sound_metadata.script` - and runs two automatic commands with a hard boundary. INTAKE (`intake DiegeticDread <Source>`) is the only command that reads a source pack. It executes the authored recipe
-(registry + route rows), routes, gates 44100, folds stereo, culls dead files and long beds, and dedups by waveform against itself and the record. It freezes the sound's own
-facts into the record - author blob, spawn band, height, indoor, fold and slice lineage, duration, fingerprint, measured loudness - resources-alone, with no source pack or path. Its per-pack coverage gate
-(UNUSED-DARK = 0) blocks the commit, and after it passes the pack is deletable. Intake is idempotent, so a re-run of an ingested pack changes nothing. REFRESH (`refresh DiegeticDread`) never touches a
-pack. It recomputes every blob from the record's AUTHOR values under the current floors (deterministic, tunable both directions), regenerates `dd_sound_metadata`, and runs verify
-(closure, integrity, schema) plus the reach audit. The base-exclusion overlay is hand-authored, not emitted here (see below). Dread curation is per-sound in `dd_spooks_metadata` rather than in the tree, so neither command touches it.
+`sound-manager` keeps DiegeticDread as two states - the ogg tree and ONE committed record, `dd_sound_metadata.script` (both the tool's store and the file the director loads). It produces them as a pure transform, SRC + BASE -> TARGET:
+
+- SRC: a source pack, read once, at intake only.
+- BASE: this mod's current tree + record, read only - the dedup baseline, what the corpus already holds.
+- TARGET: `sound-manager/target/DiegeticDread`. Every write lands here; the tool NEVER writes this repo. You copy TARGET's `gamedata` into the mod by hand once the result is right.
+
+Two commands are AUTOMATIC, both writing only TARGET. `intake DiegeticDread <Source>` is the only command that reads a source pack: it executes the authored recipe (registry + route rows), routes, gates 44100, folds stereo, culls dead files and long beds, and dedups by waveform against BASE. It freezes the sound's own facts into the record - author blob, spawn band, height, indoor, fold and slice lineage, duration, fingerprint, measured loudness - resources-alone, with no source pack or path. Its per-pack coverage gate (UNUSED-DARK = 0) blocks the commit; once it passes the pack is deletable. Intake is idempotent, so a re-run of an ingested pack changes nothing. `refresh DiegeticDread` never touches a pack: it recomputes every blob from the record's AUTHOR values under the current floors (deterministic, tunable both directions), regenerates `dd_sound_metadata`, and runs verify (closure, integrity, schema) plus the reach audit; a double refresh is byte-identical.
+
+The rest is MANUAL, by hand: promote (copy `target/DiegeticDread/gamedata` into this repo when satisfied), `reject <id>` (delete one sound you flagged by ear - its ogg and row, no memory kept; a later re-intake can re-add it, re-judge by ear), and `cut <bed> <category>` (slice a long bed into new named pieces - authoring, never the intake). The base-exclusion overlay is hand-authored too, not emitted here (see below). Dread curation is per-sound in `dd_spooks_metadata` rather than in the tree, so no command touches it.
 
 - intake: walk the source pack's sound tree and route each FILE to a category by its folder path (the `routes` rows of the recipe, a structural per-file allowlist).
   The packs ship far more dark content than they wire into a channel, so the folder trees are the source of truth over any config list. Gate on sample rate, fold stereo to mono
   (the engine 3D-positions mono only, and the author blob is captured BEFORE the fold strips it), drop dead files (true silence after the fold), and run the long-file pass.
   A sound whose ACTIVE (silence-removed) length exceeds the max emission window is long-culled, any category; cutting a long bed into pieces makes new sounds and is a manual, documented step via the `cut` command (`sound-manager.py cut <Mod> <bed> <category>`), never the intake.
-  Deduplicate by waveform against the pack and the record - exact audio hash over active rows AND rejected tombstones, then the fuzzy stage decided by PCM cross-correlation. A reshipper's wiring merges into the surviving row, net-new rows append, and the per-pack coverage gate then runs.
-  Every dark file is shipped, booked (dead, long, off-rate, rejected, re-encode), or the intake FAILS with the repo untouched. Plan runs entirely in scratch.
+  Deduplicate by waveform against the pack and the record - exact audio hash over active rows, then the fuzzy stage decided by PCM cross-correlation. A reshipper's wiring merges into the surviving row, net-new rows append, and the per-pack coverage gate then runs.
+  Every dark file is shipped, booked (dead, long, off-rate, re-encode), or the intake FAILS and writes nothing. Plan runs entirely in scratch.
   The tree and the record commit only after the coverage gate passes.
 - refresh: recompute each file's blob from its record AUTHOR values (attenuation min/max and base_volume unchanged) under the two lift-only floors, then write only the files whose f32 target differs.
   Regenerate `dd_sound_metadata.script`. The base-exclusion DLTX overlay is hand-authored and committed, written from the tool's cross-mod layout scan, never emitted here.
@@ -86,13 +89,12 @@ the identical columns every Diegetic and voice sound is gathered into: the runti
 columns the game never reads (the FULL-PRECISION author blob, the authored spawn band, fold and slice lineage, duration, fingerprint, seq, audio hash). Each active row is one sound,
 RESOURCES-ALONE: no source pack, no source path - a sound's identity is the audio itself (the audio hash). The authored band is stored SEPARATELY from the emitted ch_min/ch_max: an unwired
 row's pair is re-derived from the category medians every refresh and must never freeze at its first derived value.
-A `seq` ordinal keeps every emit byte-stable. A rejected sound keeps a TOMBSTONE (audio hash + fingerprint) in the separate `rejected` table no runtime
-reader touches - the director pools every `categories` row, so a fileless row there would play silence - and the tombstone is why a re-intake never
-silently re-adds a reject. Row batches are wrapped in their own Lua functions so the table stays under LuaJIT's constants-per-prototype cap.
-The record is why the packs are deletable. Refresh recomputes everything from it.
+A `seq` ordinal keeps every emit byte-stable. Row batches are wrapped in their own Lua functions so the table stays under LuaJIT's constants-per-prototype cap.
+The record is why the packs are deletable. Refresh recomputes everything from it. Rejecting a sound is a plain delete (the ogg and its row); the pipeline keeps no
+reject memory, so a later re-intake can re-add that audio - re-judge by ear, and record a deliberate rejection in the private history if it matters.
 
-- Intake is ALWAYS additive: the published corpus is frozen, a new pack dedups against the record by AUDIO ALONE (exact audio hash over active rows and
-  tombstones, then chromaprint candidates decided by PCM cross-correlation at >= 0.90), and only net-new audio enters, appended with the next `seq`. The first pack to bring a sound sets its band; a reshipper never overwrites it.
+- Intake is ALWAYS additive: the published corpus is frozen, a new pack dedups against the record by AUDIO ALONE (exact audio hash over active rows,
+  then chromaprint candidates decided by PCM cross-correlation at >= 0.90), and only net-new audio enters, appended with the next `seq`. The first pack to bring a sound sets its band; a reshipper never overwrites it.
   A re-intake of an ingested pack is byte-idempotent. The record does not change.
 - Limits: re-encode detection is heuristic (fp >= 0.88 candidate, xcorr >= 0.90 decide), not exact. A quality upgrade (a better copy of a shipped sound arriving later)
   never happens implicitly - the frozen copy wins. Upgrading is a deliberate reject-and-re-intake.
@@ -412,7 +414,7 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 - Volume and distance sit in the X-Ray blob. A source file that shipped with a blob keeps it exact. A blob-less file gets the category-folder median, base_volume 1.0,
   which is an approximation and is booked as one.
 - The record is RESOURCES-ALONE: a sound's identity is its audio (the content-hash name), not a pack or a path, so there is no `provenance.tsv` and no origin map. Nothing to lose under the rename.
-- Full dark coverage is proven per intake, not stored as a file: every source dark sound must be shipped, booked (dead-silent, off-rate, long-culled, rejected), or an intra-corpus re-encode of a
+- Full dark coverage is proven per intake, not stored as a file: every source dark sound must be shipped, booked (dead-silent, off-rate, long-culled), or an intra-corpus re-encode of a
   shipped sound, each decided by audio. The intake FAILS on any uncaptured dark file. The invariant is `UNUSED-DARK = 0`. No net-new dark sound is left uncaptured.
 
 ## Invariants
@@ -484,7 +486,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
   (blobs, metadata, verify, audit) with no packs required. The base-exclusion overlay is hand-authored, not a refresh output; the tool's cross-mod layout scan is the knowledge it is written from.
 
 A new pack is adopted by hand first. Audition it, author its recipe rows (registry entry + route rows) in the private recipe, then run `intake DiegeticDread <Source>`.
-The coverage gate (UNUSED-DARK = 0) audits the authoring, and the pack is deletable once the committed record lands.
+The coverage gate (UNUSED-DARK = 0) audits the authoring. The pack is deletable once intake writes TARGET, and the record is committed when you promote TARGET into this repo by hand.
 
 ## Deploy
 
