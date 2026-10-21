@@ -80,10 +80,10 @@ Each file is named by content: `zs/<category>/<origname>_<audiohash>.ogg`, the h
 The hash disambiguates the generic `sound_NN` names 27 packs share, and identical audio always maps to the same name, so adding content never renames anything.
 The record row key is `<category>/<name>`, category-qualified because one pack ships identical audio in two folders routed to two categories (the labs/drone twins).
 
-The corpus of record is `dd_sound_metadata.script` ITSELF - the same file the director loads. One file, no second copy: the runtime display columns
-(path, ch_min/ch_max, mn/mx, h, indoor, lufs/crest/peak/bv) sit beside the tool's persisted columns the game never reads (the FULL-PRECISION author blob,
-the authored spawn band, fold and slice lineage, duration, fingerprint, seq, audio hash). Each active row is one sound, RESOURCES-ALONE: no source pack, no
-source path - a sound's identity is the audio itself (the audio hash). The authored band is stored SEPARATELY from the emitted ch_min/ch_max: an unwired
+The corpus of record is `dd_sound_metadata.script` ITSELF - the same file the director loads. One file, no second copy. Its rows are the UNIFORM sound schema (`sound-manager/core/manifest.py`),
+the identical columns every Diegetic and voice sound is gathered into: the runtime display columns (path, ch_min/ch_max, mn/mx, h, indoor, lufs/crest/peak/bv) sit beside the tool's persisted
+columns the game never reads (the FULL-PRECISION author blob, the authored spawn band, fold and slice lineage, duration, fingerprint, seq, audio hash). Each active row is one sound,
+RESOURCES-ALONE: no source pack, no source path - a sound's identity is the audio itself (the audio hash). The authored band is stored SEPARATELY from the emitted ch_min/ch_max: an unwired
 row's pair is re-derived from the category medians every refresh and must never freeze at its first derived value.
 A `seq` ordinal keeps every emit byte-stable. A rejected sound keeps a TOMBSTONE (audio hash + fingerprint) in the separate `rejected` table no runtime
 reader touches - the director pools every `categories` row, so a fileless row there would play silence - and the tombstone is why a re-intake never
@@ -477,7 +477,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
   `dur` the long-file cull, `sample_rate` the 44100 fitness gate, `channels` the stereo fold, `bit_rate` the dedup quality-winner pick, `fp` the dedup candidate stage
   (decided by PCM cross-correlation), mid/side RMS the fold sum-vs-drop split. Read at RUNTIME, both sets frozen in `dd_sound_metadata` at refresh: `lufs`/`crest`/`peak`/`bv`/`mn`/`mx` feed
   `xsound.compute_delivered_loudness` for the `[PLAY]`/`[BASE]` trace and the review player, and `ch_min`/`ch_max`/`h`/`indoor` feed the director's `get_placement`.
-- Committed data: `tools/sources.yaml` (the authored gather config: registry, routes, excludes) and `dd_sound_metadata.script` (the corpus record AND the runtime table, one file).
+- Committed data: `tools/sources.yaml` (the authored intake config: registry, routes, excludes) and `dd_sound_metadata.script` (the corpus record AND the runtime table, one file).
   No manifest, no measurement cache, no provenance or ledger file: the measured facts live on each record row, dark coverage is proven per intake, and a sound's identity is its audio.
 - The tool is `sound-manager` in stalker-dev, and this repo holds data only. `intake DiegeticDread <Source>` is the once-per-pack ingest, and `refresh DiegeticDread` is the forever path
   (blobs, metadata, verify, audit) with no packs required. The base-exclusion overlay is hand-authored, not a refresh output; the tool's cross-mod layout scan is the knowledge it is written from.
