@@ -111,7 +111,7 @@ Whichever base you run, it keeps its own atmosphere.
 3. The source and the measured pipeline
 
 Measurement drives every choice here, not taste.
-The build is a reproducible pipeline, one command end to end.
+The build is a reproducible pipeline, run by command and the same every time.
 It measures every sound before it goes in.
 ffmpeg reads its integrated loudness in EBU R128 LUFS, its crest factor, and its true peak.
 ffprobe reads its duration, sample rate, channel count, and bitrate. Chromaprint fingerprints it, and the fold reads its mid and side energy.
@@ -144,7 +144,7 @@ Most of the rest carry an unset engine distance field that silences a sound more
 The build corrects that one field to the game's own far-ambience standard.
 Thousands of sounds that existed only as files on disk now play in the world, at their author's loudness, for the first time.
 A fitness gate keeps 44.1 kHz vorbis, the X-Ray standard, and accounts anything dropped.
-A per-gather coverage check proves the build misses no dark sound.
+A per-pack coverage check proves the build misses no dark sound.
 The record names no source mod or path; a sound's identity is its own audio.
 The director reads cheap signals every few seconds, never per frame, then caches them. The cost stays a slow timer whatever is on screen.
 
