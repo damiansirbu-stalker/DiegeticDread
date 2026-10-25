@@ -460,7 +460,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
 - `ui_dd_player.script` is the review and curation tool (gated by the MCM `sound_player` toggle): a standalone keyboard-owning 2D `CUIScriptWnd` modal opened by PageDown (not a PDA tab),
   reusing `ui_dd_player.xml`.
   It browses `zs/<category>/` off disk (via `xfs`) and auditions each sound through the director's own `play_sound` at the director's exact placement (fed the live scene dread), a fixed distance,
-  or at-ear. It curates by LOGGING only and never moves or deletes a file. Five premade one-word buttons (inaudible, faint, loud, unfit, good) and a custom free-text field write `[SOUND]` note lines,
+  or at-ear. It curates by LOGGING only and never moves or deletes a file. Fifteen one-word tag buttons in five labelled zones - type (outside, inside), level (low, med, high), vol (inaudible, faint, loud, painful), dist (close, far), fate (keep, cut, release, dupe) - and a custom free-text field write `[SOUND]` note lines,
   and a separate PROBE NOTE field writes a `[PROBE]` block with the full ordered sensor dump. Both go to `diegeticdread_notes.txt` (a clean, human-read notes file,
   distinct from the diagnostic `diegeticdread_probe.log`), written by `dd_test.log_sound_note` / `dd_test.log_probe_note`.
   The window owns the keyboard only so its text fields capture typing (a PDA-subdialog editbox never could). There are no command shortcuts,
