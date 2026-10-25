@@ -345,6 +345,7 @@ local function _add_stalker(id, actor_id, apos, out)
     local st = db.storage[id]
     local npc = st and st.object
     if not npc then return end
+    if not IsStalker(npc) then return end
     out.online = true
     local dist_sqr = apos:distance_to_sqr(npc:position())
     if dist_sqr > NEAR_R2 then return end
