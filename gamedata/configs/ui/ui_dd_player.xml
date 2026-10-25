@@ -57,50 +57,106 @@
 		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_stop2</texture>
 	</btn_stop>
 
-	<!-- SOUND NOTE / premade: each button writes a [SOUND] note with its one-word preset (plus the typed
-	     custom note, if any). Color-coded. -->
-	<hdr_verdict x="444" y="230" width="332" height="20">
-		<text font="letterica16" align="l" r="200" g="170" b="120">SOUND NOTE - premade  (click -&gt; log)</text>
-	</hdr_verdict>
-	<btn_v1 x="444" y="252" width="62" height="28" stretch="1">
+	<!-- SOUND NOTE / tags: five labelled zones; each button logs a [SOUND] note with its one-word tag
+	     (plus the typed custom note, if any). Log-only - the review player never moves or deletes a file. -->
+	<lbl_z_type x="444" y="232" width="50" height="26">
+		<text font="letterica16" align="r" vert_align="c" r="200" g="170" b="120">type</text>
+	</lbl_z_type>
+	<btn_t_out x="498" y="232" width="56" height="26" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="210" g="90" b="90">inaudible</text>
-	</btn_v1>
-	<btn_v2 x="510" y="252" width="62" height="28" stretch="1">
+		<text font="letterica16" align="c" r="150" g="200" b="230">outside</text>
+	</btn_t_out>
+	<btn_t_in x="557" y="232" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="200" g="180" b="140">inside</text>
+	</btn_t_in>
+
+	<lbl_z_level x="444" y="262" width="50" height="26">
+		<text font="letterica16" align="r" vert_align="c" r="200" g="170" b="120">level</text>
+	</lbl_z_level>
+	<btn_l_low x="498" y="262" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="120" g="200" b="120">low</text>
+	</btn_l_low>
+	<btn_l_med x="557" y="262" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="210" g="200" b="90">med</text>
+	</btn_l_med>
+	<btn_l_high x="616" y="262" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="210" g="90" b="90">high</text>
+	</btn_l_high>
+
+	<lbl_z_vol x="444" y="292" width="50" height="26">
+		<text font="letterica16" align="r" vert_align="c" r="200" g="170" b="120">vol</text>
+	</lbl_z_vol>
+	<btn_a_inaud x="498" y="292" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="120" g="120" b="140">inaudible</text>
+	</btn_a_inaud>
+	<btn_a_faint x="557" y="292" width="56" height="26" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c" r="210" g="150" b="80">faint</text>
-	</btn_v2>
-	<btn_v3 x="576" y="252" width="62" height="28" stretch="1">
+	</btn_a_faint>
+	<btn_a_loud x="616" y="292" width="56" height="26" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c" r="210" g="200" b="90">loud</text>
-	</btn_v3>
-	<btn_v4 x="642" y="252" width="62" height="28" stretch="1">
+	</btn_a_loud>
+	<btn_a_pain x="675" y="292" width="56" height="26" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="200" g="120" b="120">unfit</text>
-	</btn_v4>
-	<btn_v5 x="708" y="252" width="62" height="28" stretch="1">
+		<text font="letterica16" align="c" r="230" g="70" b="70">painful</text>
+	</btn_a_pain>
+
+	<lbl_z_dist x="444" y="322" width="50" height="26">
+		<text font="letterica16" align="r" vert_align="c" r="200" g="170" b="120">dist</text>
+	</lbl_z_dist>
+	<btn_d_close x="498" y="322" width="56" height="26" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="120" g="200" b="120">good</text>
-	</btn_v5>
+		<text font="letterica16" align="c" r="160" g="200" b="200">close</text>
+	</btn_d_close>
+	<btn_d_far x="557" y="322" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="120" g="160" b="200">far</text>
+	</btn_d_far>
+
+	<lbl_z_fate x="444" y="352" width="50" height="26">
+		<text font="letterica16" align="r" vert_align="c" r="200" g="170" b="120">fate</text>
+	</lbl_z_fate>
+	<btn_f_keep x="498" y="352" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="120" g="200" b="120">keep</text>
+	</btn_f_keep>
+	<btn_f_cut x="557" y="352" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="210" g="90" b="90">cut</text>
+	</btn_f_cut>
+	<btn_f_rel x="616" y="352" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="150" g="180" b="230">release</text>
+	</btn_f_rel>
+	<btn_f_dup x="675" y="352" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="160" g="160" b="160">dupe</text>
+	</btn_f_dup>
 
 	<!-- SOUND NOTE / custom: type free text, then "add note" writes it (a premade button also carries it). -->
-	<hdr_snote x="444" y="290" width="332" height="20">
+	<hdr_snote x="444" y="388" width="332" height="20">
 		<text font="letterica16" align="l" r="200" g="170" b="120">SOUND NOTE - custom</text>
 	</hdr_snote>
-	<snote x="444" y="312" width="250" height="26" stretch="1">
+	<snote x="444" y="410" width="250" height="26" stretch="1">
 		<text x="5" font="letterica16" vert_align="c" align="l"/>
 		<texture>ui_inGame2_edit_box_2</texture>
 	</snote>
-	<btn_note x="700" y="312" width="76" height="26" stretch="1">
+	<btn_note x="700" y="410" width="76" height="26" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c">add note</text>
 	</btn_note>
 
 	<!-- INSPECTOR: live spot readout + rescan. -->
-	<insp_read x="444" y="350" width="332" height="20">
+	<insp_read x="444" y="442" width="332" height="20">
 		<text font="letterica16" align="l" vert_align="c" r="180" g="200" b="180"/>
 	</insp_read>
-	<btn_rescan x="444" y="378" width="160" height="28" stretch="1">
+	<btn_rescan x="444" y="470" width="160" height="28" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c">rescan disk</text>
 	</btn_rescan>
