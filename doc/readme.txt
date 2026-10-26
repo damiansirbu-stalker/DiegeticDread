@@ -191,6 +191,19 @@ It runs on one xlibs rulebook shared across the whole mod family, the same prote
 It depends on no other mod, not even the author's own, and needs only X-Ray and xlibs beneath it.
 See the Health and JitProfiler links up top for every test and smoke result, and the mod's real CPU and allocation cost.
 
+Sound Mastering:
+
+The build is one reproducible pipeline, run by command and identical every time.
+Loudness, crest, and peak come from an EBU R128 scan of every sound (ffmpeg).
+Every file becomes mono, the only form X-Ray places in 3D, with stereo decomposed to it losslessly and native mono kept whole.
+An md5 removes the identical copies, then acoustic fingerprints (Chromaprint, Olaf, Panako) and a PCM cross-correlation catch the re-encodes it misses.
+Spectral centroid, onset, and timbre come from SoX and aubio to sort each sound by character.
+Loudness settles at each sound's measured level inside a band, and reach at a per-content distance.
+A handful of constants re-master the whole corpus, so the library moves together.
+Playback relies on direct changes made to X-Ray itself, in the demonized exes.
+Every parameter traces in game, down to the loudness a sound delivers where it plays.
+Multiple testers independently audition every sound in game through custom tools at the real parameters.
+
 Credits:
 Most of the sounds come from the original S.T.A.L.K.E.R. games and the old builds that carry and rework that audio, remastered here.
 The rest is dark ambience from community soundscape packs, with thanks to their authors.
