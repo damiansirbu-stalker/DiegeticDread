@@ -194,16 +194,16 @@ See the Health and JitProfiler links up top for every test and smoke result, and
 
 Sound Mastering:
 
-The build is one reproducible pipeline, run by command and identical every time.
-Loudness, crest, and peak come from an EBU R128 scan of every sound (ffmpeg).
-Every file becomes mono, the only form X-Ray places in 3D, with stereo decomposed to it losslessly and native mono kept whole.
-An md5 removes the identical copies, then acoustic fingerprints (Chromaprint, Olaf, Panako) and a PCM cross-correlation catch the re-encodes it misses.
-Spectral centroid, onset, and timbre come from SoX and aubio to sort each sound by character.
-Loudness settles at each sound's measured level inside a band, and reach at a per-content distance.
-A handful of constants re-master the whole corpus, so the library moves together.
-Playback relies on direct changes made to X-Ray itself, in the demonized exes.
-Every parameter traces in game, down to the loudness a sound delivers where it plays.
-Multiple testers independently audition every sound in game through custom tools at the real parameters.
+An EBU R128 scan reads each sound's integrated loudness in LUFS, crest factor, and true peak (ffmpeg ebur128, astats).
+The build folds stereo to mono and resamples to 44.1 kHz so the engine can place the sound in 3D around you (ffmpeg).
+Exact hash, audio hash, acoustic fingerprint, and waveform cross-correlation catch every duplicate, down to the re-encodes a filename hides (md5, Chromaprint, PCM xcorr).
+Neural tagging trained on AudioSet names what each sound is (PANNs CNN14).
+A language-audio model classifies each sound as indoor or outdoor (CLAP).
+Whisper transcribes and translates the Russian voice lines (faster-whisper).
+On GPU, a signal pass measures clipping, noise floor, and dynamic range (NumPy, PyTorch).
+The gain model recomputes every value the engine reads from each sound's measurement (OpenAL).
+Custom engine hooks compute delivered loudness live in game, at the exact spot a sound plays (xlibs).
+A custom in-game player, built to play each sound at its shipped parameters, lets independent testers audition the true audio in the world.
 
 Credits:
 Most of the sounds come from the original S.T.A.L.K.E.R. games and the old builds that carry and rework that audio, remastered here.
