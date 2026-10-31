@@ -25,8 +25,8 @@ Engines:
   IX-Ray: https://github.com/ixray-team/ixray-1.6-stcop/commits/develop?author=damiansirbu
 Dependents:
   COMPASS: https://github.com/Crimento/COMPASS
-  Nemesis Wave Spawn System: https://github.com/SirEndet/Nemesis-Wave-Spawn-System
-  Word of Mouth: https://github.com/joshcoppola/word_of_mouth
+  Nemesis Spawn System: https://github.com/SirEndet/Nemesis-Spawn-System
+  Word of Mouth: https://www.moddb.com/mods/stalker-anomaly/addons/word-of-mouth
 Integrations:
   Warfare (erepb): https://www.moddb.com/mods/stalker-anomaly/addons/warfare-alife-overhaul-new
   Homestead: https://www.moddb.com/mods/stalker-anomaly/addons/homestead-stalker-settlement-builder
@@ -199,7 +199,7 @@ The build folds stereo to mono and resamples to 44.1 kHz so the engine can place
 Exact hash, audio hash, acoustic fingerprint, and waveform cross-correlation catch every duplicate, down to the re-encodes a filename hides (md5, Chromaprint, PCM xcorr).
 Neural tagging trained on AudioSet names what each sound is (PANNs CNN14).
 A language-audio model classifies each sound as indoor or outdoor (CLAP).
-Whisper transcribes and translates the Russian voice lines (faster-whisper).
+Whisper transcribes the Russian voice lines (faster-whisper).
 On GPU, a signal pass measures clipping, noise floor, and dynamic range (NumPy, PyTorch).
 The gain model recomputes every value the engine reads from each sound's measurement (OpenAL).
 Custom engine hooks compute delivered loudness live in game, at the exact spot a sound plays (xlibs).
