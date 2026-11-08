@@ -158,7 +158,7 @@ A `world_ambient` play with an owner would make NPCs hear the sound, which the d
   and a faint feel comes from the director's placement rather than from removing content.
 
 The config (`dd_sound_metadata.script`, also the corpus record) carries, per sound, the blob attenuation pair (read back from the deployed ogg, trace readout only),
-the source channel's spawn band and `indoor` flag (the author's placement, which `play_sound` feeds to the vanilla formula), the source-channel height,
+the source channel's spawn band and `indoor` flag (the author's placement: `play_sound` reads only the band), the source-channel height,
 and the measured loudness (`lufs`/`crest`/`bv`) fed to `xsound.load_meta` for the delivered-loudness readout.
 
 Fitness gate: 44100 Hz vorbis only, the X-Ray standard. Off-rate and junk-bitrate files are dropped and accounted, never silently. The 44100 rule is the engine's own.
@@ -278,8 +278,9 @@ This replaces an earlier own-blob fallback that flung a default 1-300 blob out t
 The category center places a folder-only sound where that category actually sits. Per-category plus the blob-max cap means no cross-category leak.
 Every cross-pack comparison follows the recipe registry order, Shrike's latest Amplified line first, the same preference dedup uses to pick the winning copy,
 and within one pack the author's largest-max wiring wins.
-This goes through the vanilla transform, with min lifted to the band midpoint outdoors, then `random(min, max)/2`, a random bearing, `pos.y + height`,
-and the vanilla indoor/outdoor/underground volume table times the game ambient slider sets the play volume, with the MCM master `vol_global` on top (1.0 = untouched).
+This goes through the vanilla transform, with min lifted to the band midpoint outdoors, then `random(min, max)/2`, a random bearing, and `pos.y + height`.
+The play volume is the game ambient slider times the MCM master `vol_global` (1.0 = untouched). `is_eligible` already matched the category to the environment,
+and xray's occlusion raycast muffles walls (`SoundRender_Emitter_FSM.cpp:386`). Only the base replay applies the vanilla indoor/outdoor/underground table.
 The heard loudness at that distance is then the engine's attenuation on the AUTHOR's blob (min/max plus base_volume). The author placed it, the author leveled it,
 and the director decides only WHEN and WHAT. The two distance pairs are never conflated. The blob pair is the FADE curve, and the channel pair is the SPAWN band (see `sound-source-and-emitter.md`,
 attenuation range versus spawn radius). The blob min also drives OpenAL's second rolloff, which is exactly why the author's spawn band must be used and no invented distance is substituted.

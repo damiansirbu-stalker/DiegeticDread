@@ -313,7 +313,7 @@ function dd_player_wnd:_play_director(dread)
     local cats = dd_sound_metadata and dd_sound_metadata.categories and dd_sound_metadata.categories[_cur.cat]
     local row = _find_row(cats, _cur.path) or {}
     dd_director.play_sound(_cur.path, { min = row.mn or 2, max = row.mx or 100, height = row.h or 0,
-        ch_min = row.ch_min or 30, ch_max = row.ch_max or 100, indoor = row.indoor or false, dread = dread or 0 })
+        ch_min = row.ch_min or 30, ch_max = row.ch_max or 100, dread = dread or 0 })
 end
 
 function dd_player_wnd:_play_current()

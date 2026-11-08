@@ -97,7 +97,7 @@ local SPACE_JITTER  = 0.15
 local SPACE_EASE    = 0.5
 -- Dread pulls placement up to DREAD_PULL closer (0.8..1.0 factor, applied in play_sound), never the volume table.
 local DREAD_PULL    = 0.20
--- Placement is the base-game roll (sound_ambient.script:127-165): the source-channel spawn band, a random bearing and distance, then the base volume table.
+-- Placement is the base-game roll (sound_ambient.script:127-165): spawn band, random bearing and distance; the volume table is the base replay's only.
 local TICK_S       = 0.1
 local BASE_TICK_S  = 1
 local INSANE_DREAD = 0.80
@@ -575,7 +575,7 @@ local function try_emit(tg)
     local snd = _select_sound(name, _get_dread_bucket(dread))
     if snd then
         play_sound(snd.path, { min = snd.mn, max = snd.mx, height = snd.h,
-                       ch_min = snd.ch_min, ch_max = snd.ch_max, indoor = snd.indoor, dread = dread })
+                       ch_min = snd.ch_min, ch_max = snd.ch_max, dread = dread })
         _last_play = snd.path
         _play_at = tg
         dd_debug.debug("[PICK] cat=%s snd=%s dread=%.2f", name, snd.path, dread)
@@ -746,14 +746,14 @@ function _build_detail(path, dist)
 end
 
 --- Fire one positioned one-shot at path, pulling the rolled spawn distance closer by dread and placing it via get_placement.
---- Returns the distance; the volume is the base table times the sliders, and the trace reads delivered loudness via the profile.
+--- Volume is the sliders alone: is_eligible matched the environment, xray occlusion muffles walls (Emitter_FSM.cpp:386).
 function play_sound(path, opts)
     local actor = db.actor
     if not (actor and path and xsound) then return end
     local height = opts.height or 0
     local place_dist = opts.dist or _compute_pull_dist(opts.ch_min, opts.ch_max, opts.dread)
-    local dist, vec, vol = get_placement(actor, opts.ch_min, opts.ch_max, height, opts.indoor, place_dist)
-    vol = vol * opt_ambient_volume * vol_global
+    local dist, vec = get_placement(actor, opts.ch_min, opts.ch_max, height, false, place_dist)
+    local vol = opt_ambient_volume * vol_global
     xsound.play_at(path, { position = vec, volume = vol })
     if dd_debug.is_on() then
         local d3d = math_sqrt(dist * dist + height * height)
