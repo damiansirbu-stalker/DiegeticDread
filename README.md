@@ -3,7 +3,7 @@
 A dread director. It scores the place you are standing in, how enclosed you are, the hour, the nearest threat and the allies around you, then decides how close and how often a horror sound plays.
 The sounds are curated from several soundscape packs, placed in 3D, and removed from the base ambient channels so nothing doubles.
 
-[Releases](https://github.com/damiansirbu-stalker/DiegeticDread/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/DiegeticDread/issues)
+[![Releases](https://img.shields.io/badge/Releases-24292f?logo=github&logoColor=white)](https://github.com/damiansirbu-stalker/DiegeticDread/releases) [![Bugs, suggestions](https://img.shields.io/badge/Bugs%2C_suggestions-24292f?logo=github&logoColor=white)](https://github.com/damiansirbu-stalker/DiegeticDread/issues) [![Ko-fi](https://img.shields.io/badge/Ko--fi-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/damiansirbu)
 
 [![ci](https://github.com/damiansirbu-stalker/DiegeticDread/actions/workflows/ci.yml/badge.svg)](https://github.com/damiansirbu-stalker/DiegeticDread/actions/workflows/ci.yml) [![Project Health](https://img.shields.io/badge/project_health-dashboard-00ced1)](https://damiansirbu-stalker.github.io/DiegeticDread/)
 
