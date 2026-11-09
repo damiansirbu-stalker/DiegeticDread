@@ -29,11 +29,11 @@ levels = {
     l06_rostok     = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial" },
     l09_deadcity   = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial" },
     l10_limansk    = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial" },
-    l11_hospital   = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial", "labs", "drip" },
+    l11_hospital   = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial", "labs" },
     l11_pripyat    = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial" },
     pripyat        = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial" },
-    l12_stancia    = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial", "labs", "drip" },
-    l12_stancia_2  = { "dark_signal", "labs", "drip", "rats", "structural", "industrial", "bats" },
+    l12_stancia    = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial", "labs" },
+    l12_stancia_2  = { "dark_signal", "labs", "rats", "structural", "industrial", "bats" },
 
     -- underground / lab / bunker (no outdoor terrain)
     l03u_agr_underground  = { "dark_signal", "labs", "drip", "rats", "structural", "industrial", "bats" },
