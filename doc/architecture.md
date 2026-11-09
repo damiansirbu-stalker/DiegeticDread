@@ -222,7 +222,7 @@ A category is eligible only if all three checks pass, in order (`is_eligible`, r
   `default` holds the universal cues on every level, and each level's list adds its terrain flavor, its interior or facility kinds, and the `dark_signal` lore placement.
   A lab level lists `labs`, a swamp lists `mutant_ambient_swamp`, and a wild forest never lists `dark_signal`.
 - **environment** - the category's `env` set contains the current `board.environment` (labs counts as underground for the gate). Outdoor never plays the inside kinds (structural, labs, drip, rats),
-  and indoor never plays the outside kinds (foliage, wind, wildlife, urban, the zones).
+  and indoor never plays the outside kinds (foliage, wind, wildlife, birds, urban, the zones).
 - **need** - a live gate: `mutant` needs `monsters.online`, `gunfire` needs `stalkers.online`, and `drone` needs `anomalies.near`. The rest need none.
 
 The base is NOT a select filter. A friendly base is silenced by APPLY, which drives dread to 0, and SELECT does not gate it. Selection is a **symmetrical two-level shuffle-bag**, no weights:
@@ -353,17 +353,17 @@ with dread the per-sound `dd_spooks_metadata` override) and the config key.
 A category's runtime attributes (its `env` set, `requires` gate, per-map eligibility, and presence checks) live in the director (`dd_director`) and the per-map LTX, keyed by the category name.
 The config carries sound paths and per-sound values only, and the category NAME is the entire contract between the pipeline and the runtime.
 
-The 20 categories:
+The 21 categories:
 
 - creature - `mutant`: one pooled bag, gated at runtime on any real mutant being present (a single boolean, not per-species). Fed by `monsters/<species>` (combat filtered out), `soundscape/mutants`,
   and the flat `spooks_above/mutants` trees. Species is an intake-time routing input, not kept in the record.
 - zone ambience - `mutant_ambient_forest` / `_swamp` / `_urban` / `_field`: per-zone horror-mutant atmosphere, map-selected per level, no time and no species.
   Fed by the terrain-split `trx/spooks_above/<zone>{day,night}mutants` trees.
-- ambience - `spook`, `scream`, `drone`, `dark_signal`, `industrial`, `structural`, `labs`, `drip`, `wind`, `foliage`, `wildlife`, `urban`, `gunfire`, `rats`, `bats`.
+- ambience - `spook`, `scream`, `drone`, `dark_signal`, `industrial`, `structural`, `labs`, `drip`, `wind`, `foliage`, `wildlife`, `birds`, `urban`, `gunfire`, `rats`, `bats`.
 
 Categories are de-mixed from the source structure by folder path (`spooks_above` = surface, `spooks_below` = underground): the old `machine` bucket becomes surface `industrial`,
 the underground mega-bucket becomes `labs` (`underground` is now only the enclosure STATE, no longer a category), terrain mutants split off into the four `mutant_ambient_<zone>` zones,
-`creak` becomes `foliage`, and vermin split into `rats` and `bats`. A category is split only along a filter axis the runtime acts on (env, per-map zone, presence),
+`creak` becomes `foliage`, vermin split into `rats` and `bats`, and the tree and flying birds split off `wildlife` into `birds`, placed overhead. A category is split only along an axis the runtime acts on (env, per-map zone, presence, placement height),
 which is why the four zones are separate categories but the underground kinds collapse into `labs`.
 
 ## The base-exclusion: static DLTX removal, plus a logging observer

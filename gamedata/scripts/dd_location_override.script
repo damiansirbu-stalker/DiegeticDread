@@ -4,25 +4,25 @@ levels = {
     default = { "spook", "scream", "mutant", "drone", "gunfire" },
 
     -- swamp / wetland
-    k00_marsh  = { "mutant_ambient_swamp", "wind", "wildlife", "bats", "structural" },
-    l08_yantar = { "dark_signal", "mutant_ambient_swamp", "wind", "wildlife", "bats", "structural", "industrial" },
-    zaton      = { "dark_signal", "mutant_ambient_swamp", "wind", "wildlife", "bats", "structural", "industrial" },
+    k00_marsh  = { "mutant_ambient_swamp", "wind", "wildlife", "birds","bats", "structural" },
+    l08_yantar = { "dark_signal", "mutant_ambient_swamp", "wind", "wildlife", "birds","bats", "structural", "industrial" },
+    zaton      = { "dark_signal", "mutant_ambient_swamp", "wind", "wildlife", "birds","bats", "structural", "industrial" },
 
     -- forest
-    l07_military    = { "dark_signal", "mutant_ambient_forest", "foliage", "wind", "wildlife", "structural" },
-    l10_red_forest  = { "mutant_ambient_forest", "foliage", "wind", "wildlife", "structural" },
+    l07_military    = { "dark_signal", "mutant_ambient_forest", "foliage", "wind", "wildlife", "birds","structural" },
+    l10_red_forest  = { "mutant_ambient_forest", "foliage", "wind", "wildlife", "birds","structural" },
 
     -- field / open
-    l01_escape          = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "foliage", "structural" },
-    k01_darkscape       = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "structural" },
-    k02_trucks_cemetery = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "structural", "industrial" },
-    l02_garbage         = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "structural", "industrial" },
-    l03_agroprom        = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "foliage", "structural", "industrial" },
-    l04_darkvalley      = { "mutant_ambient_field", "wind", "wildlife", "foliage", "structural" },
-    l10_radar           = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "structural", "industrial" },
-    l13_generators      = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "structural", "industrial" },
-    jupiter             = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "structural", "industrial" },
-    y04_pole            = { "mutant_ambient_field", "wind", "wildlife", "foliage" },
+    l01_escape          = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","foliage", "structural" },
+    k01_darkscape       = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","structural" },
+    k02_trucks_cemetery = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","structural", "industrial" },
+    l02_garbage         = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","structural", "industrial" },
+    l03_agroprom        = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","foliage", "structural", "industrial" },
+    l04_darkvalley      = { "mutant_ambient_field", "wind", "wildlife", "birds","foliage", "structural" },
+    l10_radar           = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","structural", "industrial" },
+    l13_generators      = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","structural", "industrial" },
+    jupiter             = { "dark_signal", "mutant_ambient_field", "wind", "wildlife", "birds","structural", "industrial" },
+    y04_pole            = { "mutant_ambient_field", "wind", "wildlife", "birds","foliage" },
 
     -- urban / city
     l05_bar        = { "dark_signal", "mutant_ambient_urban", "urban", "wind", "structural", "industrial" },

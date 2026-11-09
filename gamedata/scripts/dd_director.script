@@ -39,6 +39,7 @@ local CATEGORY = {
     wind        = { out = true },
     foliage     = { out = true },
     wildlife    = { out = true },
+    birds       = { out = true },
     urban       = { out = true },
     gunfire     = { out = true, need = NEED.HUMAN },
     rats        = { ind = true, ug = true },
