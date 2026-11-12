@@ -62,7 +62,7 @@ local function _build_spooks_page()
         gr = {
             _build_title(),
             { id = "desc", type = "desc", text = "ui_mcm_dd_spooks_desc" },
-            { id = "vol_global", type = "track", val = 2, min = 0.0, max = 5.0, step = 0.05, def = 1.0, hint = "dd_vol_global" },
+            { id = "vol_global", type = "track", val = 2, min = 0.0, max = 1.0, step = 0.05, def = 1.0, hint = "dd_vol_global" },
 
             { id = "div_feel", type = "line" },
             { id = "hdr_feel", type = "desc", text = "ui_mcm_dd_hdr_feel", clr = GREY },

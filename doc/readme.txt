@@ -129,7 +129,7 @@ The director also reads each sound's spawn band and height to place it in 3D aro
 The build takes every sound a pack holds, wired or not, and each one is sorted into a horror category by hand.
 Cutting a long bed into pieces makes new sounds, and it is a manual step.
 The build levels every file from its own measurement. No value a pack author set reaches the game.
-The far distance is the category's reach, taken from the base game's own ambient distances.
+The far distance is the category's reach, one value per kind of sound, in the range the base game uses for its own ambient cues.
 The near distance follows the crest. A sustained tone carries, and a sharp one stays close.
 The gain starts at 1.0. A file that arrives too quiet at its farthest placement is lifted part of the way, and one that arrives too loud is pulled down.
 All three are numbers in the ogg header, and the audio is never re-encoded for them.

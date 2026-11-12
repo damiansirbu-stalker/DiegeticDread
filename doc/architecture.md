@@ -192,7 +192,7 @@ The cuts sit on the engine's own rank scales, a stalker's `character_rank()` and
 
 The loop runs a fixed 100ms and never stops, so a rising dread is always caught, and the board refreshes over the producer rotation. Emission is separate:
 the gap between plays scales with the CURRENT dread, from a calm mean of 40s (`SPACE_CALM_MS`, silence carries the dread) to a peak mean of about 8s (`SPACE_PEAK_MS`),
-power-eased off the calm end (`SPACE_EASE`). Mid-dread sits near 17s (drops fast then fine-grades toward peak), with a `SPACE_JITTER` spread.
+power-eased off the calm end (`SPACE_EASE`). At dread 0.5 the gap is about 19s (drops fast then fine-grades toward peak), with a `SPACE_JITTER` spread.
 The gap is re-evaluated every 100ms against the live dread.
 A rising dread tightens it at once, and a threat that appears mid-calm-gap fires promptly even during the long calm interval.
 This targets the base's COMBINED felt rate (vanilla horror channels average 45-70s each but run ~5 concurrently, ~14s combined, and the modern packs ~5s combined) with a single stream,

@@ -698,6 +698,7 @@ end
 local function update_config()
     rarity             = dd_mcm.get_config("rarity") or 1
     vol_global         = dd_mcm.get_config("vol_global") or 1
+    if vol_global > 1 then vol_global = 1 end
     opt_ambient_volume = (ui_options and ui_options.get("sound/environment/ambient_volume")) or 1
     local wanted = dd_mcm.get_config("visuals")
     visuals_on = (wanted == nil) or wanted

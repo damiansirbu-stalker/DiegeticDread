@@ -22,7 +22,7 @@
     <text>Overall volume</text>
   </string>
   <string id="ui_mcm_dd_vol_global_desc">
-    <text>Volume multiplier for every spook one-shot.</text>
+    <text>Volume of every sound the mod plays. Lower it to set the horror under your base ambience.</text>
   </string>
   <string id="ui_mcm_dd_sensitivity">
     <text>Spook sensitivity</text>
