@@ -29,7 +29,7 @@ The category is the unit of organization and of play. It is a directory of sound
 with no weight and no cooldown. Dread lives per-sound. `dd_spooks_metadata` (the `sounds` table, `["deployed-name"] = { dread = "low"|"med"|"high" }`) is the single source of a sound's dread.
 A sound with no override plays at EVERY scene dread (the default), and an overridden one plays ONLY at its dread. Curating a sound is adding one line to that table, keyed by the stable deployed name,
 and it survives every intake and refresh (dread lives in the hand-curated table, never in the tree). The director reads the generated sound config (`dd_sound_metadata.script`) that lists each category,
-then that category's flat sound list, each row a named-field table: its blob attenuation pair, its source channel's SPAWN band and `indoor` flag (the author's placement), its height,
+then that category's flat sound list, each row a named-field table: its blob min/max pair, its spawn band (ch_min/ch_max, derived from the reach) and `indoor` flag, its height,
 and its measured loudness (`lufs`/`crest`/`bv`). The director also flattens those rows into `xsound.load_meta`, so any consumer can read a sound's delivered loudness.
 It applies the dread override at load to build the per-dread pools. The config replaces the channel definitions the director used to read from `sound_channels.ltx`.
 Anomaly Lua cannot enumerate a directory at runtime, so the deploy writes the config and the director reads it. See "Categories - the rule table" below.
@@ -43,21 +43,22 @@ The category list is the single source of truth.
 - BASE: this mod's current tree + record, read only - the dedup baseline, what the corpus already holds.
 - TARGET: `sound-manager/target/DiegeticDread`. Every write lands here; the tool NEVER writes this repo. You copy TARGET's `gamedata` into the mod by hand once the result is right.
 
-Two commands are AUTOMATIC, both writing only TARGET. `intake DiegeticDread <Source>` is the only command that reads a source pack: it executes the authored recipe (registry + route rows), routes, gates 44100, folds stereo, culls dead files and long beds, and dedups by waveform against BASE. It freezes the sound's own facts into the record - author blob, spawn band, height, indoor, fold and slice lineage, duration, fingerprint, measured loudness - resources-alone, with no source pack or path. Its per-pack coverage gate (UNUSED-DARK = 0) blocks the commit; once it passes the pack is deletable. Intake is idempotent, so a re-run of an ingested pack changes nothing. `refresh DiegeticDread` never touches a pack: it recomputes every blob from the record's AUTHOR values under the current floors (deterministic, tunable both directions), regenerates `dd_sound_metadata`, and runs verify (closure, integrity, schema) plus the reach audit; a double refresh is byte-identical.
+Two commands are AUTOMATIC, both writing only TARGET. `intake DiegeticDread <Source>` is the only command that reads a source pack: it executes the authored recipe (registry + route rows), routes, gates 44100, folds stereo, culls dead files and long beds, and dedups by waveform against BASE. It freezes the sound's own facts into the record - author blob, spawn band, height, indoor, fold and slice lineage, duration, fingerprint, measured loudness - resources-alone, with no source pack or path. Its per-pack coverage gate (UNUSED-DARK = 0) blocks the commit; once it passes the pack is deletable. Intake is idempotent, so a re-run of an ingested pack changes nothing. `refresh DiegeticDread` never touches a pack: it recomputes every blob under the measured model (min and max from the per-content reach and the measured crest, base_volume bounded into the floor/ceiling loudness band off the measured LUFS, no author min or max read - the shared model is `doc/standards/stalker-mining.md`), regenerates `dd_sound_metadata`, and runs verify (closure, integrity, schema) plus the delivered-loudness audit; a double refresh is byte-identical.
 
 The rest is MANUAL, by hand: promote (copy `target/DiegeticDread/gamedata` into this repo when satisfied), `reject <id>` (delete one sound you flagged by ear - its ogg and row, no memory kept; a later re-intake can re-add it, re-judge by ear), and `cut <bed> <category>` (slice a long bed into new named pieces - authoring, never the intake). The base-exclusion overlay is hand-authored too, not emitted here (see below). Dread curation is per-sound in `dd_spooks_metadata` rather than in the tree, so no command touches it.
 
 - intake: walk the source pack's sound tree and route each FILE to a category by its folder path (the `routes` rows of the recipe, a structural per-file allowlist).
+  DEPRECATED DESIGN: this intake-time routing - source-to-category decided inside the tool/recipe - is the OLD model. The target architecture (`doc/standards/stalker-mining.md`) moves ALL routing OUT of the tool to hand curation; the s07 rebuild (deferred, dormant - it only runs on a new-pack intake) keeps every sound keyed by its source folder and makes the category a hand decision. The description below is the current code, not the target.
   The packs ship far more dark content than they wire into a channel, so the folder trees are the source of truth over any config list. Gate on sample rate, fold stereo to mono
   (the engine 3D-positions mono only, and the author blob is captured BEFORE the fold strips it), drop dead files (true silence after the fold), and run the long-file pass.
   A sound whose ACTIVE (silence-removed) length exceeds the max emission window is long-culled, any category; cutting a long bed into pieces makes new sounds and is a manual, documented step via the `cut` command (`sound-manager.py cut <Mod> <bed> <category>`), never the intake.
   Deduplicate by waveform against the pack and the record - exact audio hash over active rows, then the fuzzy stage decided by PCM cross-correlation. A reshipper's wiring merges into the surviving row, net-new rows append, and the per-pack coverage gate then runs.
   Every dark file is shipped, booked (dead, long, off-rate, re-encode), or the intake FAILS and writes nothing. Plan runs entirely in scratch.
   The tree and the record commit only after the coverage gate passes.
-- refresh: recompute each file's blob from its record AUTHOR values (attenuation min/max and base_volume unchanged) under the two lift-only floors, then write only the files whose f32 target differs.
-  Regenerate `dd_sound_metadata.script`. The base-exclusion DLTX overlay is hand-authored and committed, written from the tool's cross-mod layout scan, never emitted here.
+- refresh: recompute each file's blob under the measured model (min/max from the per-content reach and the measured crest, base_volume bounded into the floor/ceiling band), then write only the files whose f32 target differs.
+  Regenerate `dd_sound_metadata.script`. The base-exclusion DLTX overlay is hand-authored and committed, never emitted here; `verify` only simulates it against the installed layouts.
   The metadata row carries the category's flat sound list, and per sound the blob pair, spawn band, `indoor`, height, and measured `lufs`/`crest`/`peak`/`bv` - plus the record's own persisted columns the game never reads (below).
-  Verify covers record-tree closure both ways, id-vs-audio integrity (a hand-edited ogg trips it), the record schema gate, the dangling-dread report, and then the reach audit.
+  Verify covers record-tree closure both ways, id-vs-audio integrity (a hand-edited ogg trips it), the record schema gate, the dangling-dread report, and then the delivered-loudness audit.
 
 ### No audible sound drops before audition
 
@@ -87,8 +88,8 @@ The record row key is `<category>/<name>`, category-qualified because one pack s
 The corpus of record is `dd_sound_metadata.script` ITSELF - the same file the director loads. One file, no second copy. Its rows are the UNIFORM sound schema (`sound-manager/core/manifest.py`),
 the identical columns every Diegetic and voice sound is gathered into: the runtime display columns (path, ch_min/ch_max, mn/mx, h, indoor, lufs/crest/peak/bv) sit beside the tool's persisted
 columns the game never reads (the FULL-PRECISION author blob, the authored spawn band, fold and slice lineage, duration, fingerprint, seq, audio hash). Each active row is one sound,
-RESOURCES-ALONE: no source pack, no source path - a sound's identity is the audio itself (the audio hash). The authored band is stored SEPARATELY from the emitted ch_min/ch_max: an unwired
-row's pair is re-derived from the category medians every refresh and must never freeze at its first derived value.
+RESOURCES-ALONE: no source pack, no source path - a sound's identity is the audio itself (the audio hash). The persisted author blob and harvested band are audit columns only; the measured
+master reads neither. The emitted ch_min/ch_max come from the category's reach every refresh (ch_max = reach, ch_min = ratio x reach), the same pair for every sound in a category.
 A `seq` ordinal keeps every emit byte-stable. Row batches are wrapped in their own Lua functions so the table stays under LuaJIT's constants-per-prototype cap.
 The record is why the packs are deletable. Refresh recomputes everything from it. Rejecting a sound is a plain delete (the ogg and its row); the pipeline keeps no
 reject memory, so a later re-intake can re-add that audio - re-judge by ear, and record a deliberate rejection in the private history if it matters.
@@ -119,15 +120,15 @@ kept because re-encoding cannot restore detail the source never captured. Modern
 This runs among the source packs only, within a pack and between the packs we pull from. DiegeticDread does not deduplicate against the target modpack.
 It never drops a sound because the install already plays it. Doubling with the base is handled by the static DLTX exclusion overlay at config load.
 
-## Byte-for-byte audio, author's blob unchanged
+## Byte-for-byte audio, blob rewritten to the measured model
 
-A MONO sound's AUDIO ships byte for byte with no re-encode, the vorbis pages untouched. What the deploy writes is only the X-Ray ogg comment blob (min distance, max distance, base_volume),
-a lossless header-page rewrite (`_write_blob`), so the audio pages stay byte-identical. A STEREO sound is the exception. The engine cannot 3D-position it,
-so intake folds it to mono (`fold.fold_to_mono`, re-encoded, booked "cut"), then writes the blob. Its author's blob is captured from the source BEFORE the fold strips it (`src_blob`),
-so the fold does not lose the author's values.
+A MONO sound's AUDIO ships byte for byte with no re-encode, the vorbis pages untouched. What refresh writes is only the X-Ray ogg comment blob (min distance, max distance, base_volume),
+a lossless header-page rewrite (`ogg.write_blob`), so the audio pages stay byte-identical while the blob itself is recomputed from the measured model (above). A STEREO sound is the exception: the
+engine cannot 3D-position it, so intake folds it to mono (`fold.fold_to_mono`, re-encoded, booked "cut") before hashing. The source's own blob is captured before the fold and kept as a persisted
+audit column; the measured master does not read it.
 
 Blob contract (the engine-read fields). The `0x0003` comment struct (`SoundRender_Source_loader.cpp`) holds five fields: `min`, `max`, `base_volume`, `game_type`, and `max_ai_dist`.
-`_write_blob` writes all five, and the engine reads exactly those. Nothing written is ignored, nothing read is left unset.
+`ogg.write_blob` writes all five, and the engine reads exactly those. Nothing written is ignored, nothing read is left unset.
 `min`, `max`, and `base_volume` carry the attenuation and loudness below, the linear rolloff plus the OpenAL inverse keyed on `min` and the `base_volume` gain (`SoundRender_Emitter_FSM.cpp`).
 `game_type` is written 0, and `max_ai_dist` is written equal to `max`, both inert for our content.
 The play-time sound type overrides the blob `game_type` (`SoundRender_Core.cpp`).
@@ -135,31 +136,11 @@ The play-time sound type overrides the blob `game_type` (`SoundRender_Core.cpp`)
 `max_ai_dist` is set to `max` only to satisfy the loader's `>= 0.1` assert, the one engine-read lever left deliberately unused.
 A `world_ambient` play with an owner would make NPCs hear the sound, which the director does not want.
 
-- **Attenuation** (min/max distance) is the AUTHOR's, with ONE uniform, declared transform: the min_distance FLOOR (`_normalize_blobs`). 61% of the corpus carries min 1-2, the UNSET tool default.
-  OpenAL's inverse rolloff keys on min (`AL_REFERENCE_DISTANCE`). Those files therefore lost -25..-33 dB at their felt placement and played silent.
-  The floor raises each file's written min to `ratio x its felt-far distance` (band_max/2). It never lowers an authored min,
-  so the distance-baked 300-10000m sounds and every deliberately-authored range stay untouched. max is kept unchanged, and the guard `max > min` keeps the engine divide safe.
-  - The ratio is NOT flat. PRINCIPLE (measured, mild-moderate, automated): placement loudness follows CREST, INVERTED (`_crest_ratio`). A sustained low-crest tone carries in air,
-    so a higher ratio keeps it present at distance. A sharp high-crest transient is a near-field detail, so a lower ratio keeps it intimate. Crest is measured per file (the measurement cache).
-    Verified across the corpus: `drip` (24 dB), `rats`, and `foliage` are the sharp near-field sounds, and the sustained dread (`drone`/`scream`/`mutant`/`spook`, ~6-7 dB) carries.
-    Span 0.40-0.60 (`RATIO_LO`/`RATIO_HI`) centers on the old flat 0.5, with ~3 dB of far-edge spread, so scares and beds separate without anything dropping to silence.
-    This restores the near/far loudness depth a single flat ratio had removed. A blob-less file gets its category-folder median min/max, then the same crest floor.
-- **Loudness is the AUTHOR's base_volume with ONE lift-only correction: the loudness FLOOR** (`_loudness_floor`).
-  base_volume is a linear multiplier the engine applies on every play (see `sound-source-and-emitter.md`). The deploy writes each file's authored base_volume UNCHANGED,
-  except where its measured DELIVERED loudness at the felt-far placement (`content_LUFS + 20log10(base_volume x volume_att x al_gain)`, LUFS from `_measure_corpus_lufs`,
-  ffmpeg ebur128 on the deployed ogg, cached) falls below the faint-audible level (`LOUD_FLOOR` -36 dB). Then base_volume is lifted toward the floor,
-  PARTIAL (`LOUD_FRAC` 0.7 of the deficit) and CAPPED (`LOUD_MAXBV` 6 plus a far-gain cap `LOUD_FARCAP` that keeps the sound below the engine's 1.0 clamp so distance falloff survives). LIFT-ONLY:
-  it never lowers an author value, so loud files and their dynamics are untouched. It fixes quiet CONTENT the min floor cannot (a -40 LUFS recording plays inaudible even at flat full gain,
-  for example drip, min-floored to 80 = the loudest placement, still inaudible). It is NOT the corpus-median RMS leveling (n126,
-  REMOVED for blowing the tight 0.5-2.0 out to 0.1-28 and deafening the transient scares). A floor raises only the too-quiet toward faint-audible and stops. ~37% of the corpus is lifted,
-  and the loud or reference sounds are untouched. A file with no authored value (or <=0) starts at base_volume 1.0, then the floor.
-- **Dead-file cull** (`_cull_dead`): after the fold, a file whose audio is unmeasurable or true silence (peak -inf) is DROPPED.
-  The fold can cancel an anti-phase pair to silence that `_drop_silent` (pre-fold) could not see. There is NO quiet-cull: a quiet-but-real sound ships at its author's loudness,
-  and a faint feel comes from the director's placement rather than from removing content.
+- **The blob is the measured model**, shared across every sound mod (`doc/standards/stalker-mining.md`). No author min or max is read. The max is the per-content reach from `DREAD_REACH` (`sound-manager.py`), which takes vanilla's `sound_channels.ltx` reach per content: wind 60, labs and structural 115, spook and mutant 120-150. The min is the measured crest floor off the reach/2 placement (`gainmodel.crest_ratio`): a sustained low-crest bed carries at distance, a sharp high-crest transient stays near-field. base_volume starts at unity (no author value) and is bounded into the loudness band off the measured LUFS (ffmpeg ebur128): lifted toward the floor (-36 dB) when it delivers quieter at the placement, pulled toward the ceiling (-18 dB) when louder, both partial (0.7 of the deficit) and far-capped so the distance falloff survives the engine's 1.0 gain clamp. No author min, max, or base_volume is read. Same audio and reach give the same blob every run.
+- **Reach is the one tunable**, per content, never per sound. A category that plays too loud or too far is a wrong `DREAD_REACH` value: fix it once and every sound in the category follows on the next refresh.
+- **Dead-file cull**: after the fold, a file that is unmeasurable or true silence (peak -inf) is dropped - the fold can cancel an anti-phase pair the pre-fold silence check could not see. There is no quiet-cull: a quiet-but-real sound ships, and a faint feel comes from the director's placement, not from removing content.
 
-The config (`dd_sound_metadata.script`, also the corpus record) carries, per sound, the blob attenuation pair (read back from the deployed ogg, trace readout only),
-the source channel's spawn band and `indoor` flag (the author's placement: `play_sound` reads only the band), the source-channel height,
-and the measured loudness (`lufs`/`crest`/`bv`) fed to `xsound.load_meta` for the delivered-loudness readout.
+The config (`dd_sound_metadata.script`, also the corpus record) carries per sound the blob min/max pair (read back from the deployed ogg, trace readout only), the spawn band the director places within (ch_min/ch_max, derived from the reach), the height, and the measured `lufs`/`crest`/`peak`/`bv` fed to `xsound.load_meta` for the delivered-loudness readout.
 
 Fitness gate: 44100 Hz vorbis only, the X-Ray standard. Off-rate and junk-bitrate files are dropped and accounted, never silently. The 44100 rule is the engine's own.
 `CSoundRender_Source::LoadWave` hard-rejects any other rate (`SoundRender_Source_loader.cpp`, returns false). `xrSound` has NO resampler and decodes to PCM, then plays the file as decoded.
@@ -267,25 +248,17 @@ Dread never gates the CATEGORY (SELECT stays map & env & presence). It drives **
 the **dread pool** the per-category sound-bag draws from (the scene bucket, filtered by the per-sound override, above),
 and a **placement pull** (`play_sound` moves the rolled spawn distance up to 20% closer at peak, `DREAD_PULL`). It never touches the volume table.
 
-The base game's `update_ambient` code places each emitted sound.
-`get_placement` clones its placement and volume math (`sound_ambient.script`), fed the sound's OWN source-channel values from the config.
-intake harvests the channel SPAWN band (`ch_min`/`ch_max`) from the pack's own channel files, and freezes it in the record with the shipped copy's blob.
-Blob and placement must be one author's pair, or the combination reproduces nobody's mix. The first pack to bring a sound sets its band and it freezes; a later pack wiring
-it differently is surfaced at intake as a WARN, never silently taken. A sound no pack wires gets the UNWIRED fallback.
-The UNWIRED fallback gives the sound its CATEGORY CENTER, the median of that category's wired bands, or of its own blobs when nothing in it is wired.
-It adds a deterministic +/-25% jitter (seeded by the deployed name so a refresh never reshuffles), capped to the sound's own blob max so it is never placed past its silence point.
-This replaces an earlier own-blob fallback that flung a default 1-300 blob out to 150m.
-The category center places a folder-only sound where that category actually sits. Per-category plus the blob-max cap means no cross-category leak.
-Every cross-pack comparison follows the recipe registry order, Shrike's latest Amplified line first, the same preference dedup uses to pick the winning copy,
-and within one pack the author's largest-max wiring wins.
-This goes through the vanilla transform, with min lifted to the band midpoint outdoors, then `random(min, max)/2`, a random bearing, and `pos.y + height`.
+The base game's `update_ambient` code places each emitted sound. `get_placement` clones its placement and volume math (`sound_ambient.script`), fed the sound's spawn band from the config.
+Under the measured model the spawn band is the category's reach, not the author's channel: ch_max = reach, ch_min = ratio x reach, the same pair for every sound in the category. The blob falloff
+(min/max) and the spawn band are built from the ONE reach, so they stay consistent by construction - the earlier "one author's pair" rule is gone with the author values. intake still harvests the
+pack's channel band and still WARNs on a conflicting later wiring, but those are audit columns the measured master ignores; a sound no pack wires needs no fallback, because every band is its reach.
+Placement goes through the vanilla transform: `random(spawn_min, ch_max)/2` (spawn_min = (ch_max+ch_min)/2 outdoors, ch_min underground), a random bearing, and `pos.y + height`.
 The play volume is the game ambient slider times the MCM master `vol_global` (1.0 = untouched). `is_eligible` already matched the category to the environment,
 and xray's occlusion raycast muffles walls (`SoundRender_Emitter_FSM.cpp:386`). Only the base replay applies the vanilla indoor/outdoor/underground table.
-The heard loudness at that distance is then the engine's attenuation on the AUTHOR's blob (min/max plus base_volume). The author placed it, the author leveled it,
-and the director decides only WHEN and WHAT. The two distance pairs are never conflated. The blob pair is the FADE curve, and the channel pair is the SPAWN band (see `sound-source-and-emitter.md`,
-attenuation range versus spawn radius). The blob min also drives OpenAL's second rolloff, which is exactly why the author's spawn band must be used and no invented distance is substituted.
-Height is the sound's ORIGINAL source-channel elevation (harvested at intake, highest non-zero wins), and the record carries it as `snd.h`.
-An overhead sound (bird, vent, thunder) stays overhead.
+The heard loudness at that distance is the engine's attenuation on the MEASURED blob, and the director decides only WHEN and WHAT. The two distance pairs are never conflated: the blob min/max is the
+FADE curve, the spawn band ch_min/ch_max is the SPAWN radius (see `sound-source-and-emitter.md`, attenuation range versus spawn radius), and both come from the reach. The blob min also drives OpenAL's
+inverse rolloff.
+Height is the sound's elevation, curation-authored (harvested at intake, highest non-zero wins), carried as `snd.h`. An overhead sound (bird, vent, thunder) stays overhead.
 
 ### Position overrides - hand-marked static positions
 
@@ -312,26 +285,23 @@ The engine computes the audible gain per play (`SoundRender_Emitter_FSM.cpp`):
     gain = base_volume x volume_att x effect_volume x occlusion x fade
 
 - **base_volume** - the per-file value in the ogg comment blob (X-Ray native, `SoundRender_Source_loader.cpp`). A direct linear multiplier, applied to mono AND stereo alike.
-  The deploy writes the AUTHOR's base_volume, lifted only by the loudness floor for the too-quiet (`_loudness_floor`, see "Byte-for-byte audio"). It never re-levels the corpus.
-  The authored values are tight (~0.5-2.0) and field-tested, so the corpus is even without imposing a target, and a blob-less file gets 1.0.
+  The measured master bounds it into the loudness band off the measured LUFS (floor -36, ceiling -18), starting from the source value and leaving an in-band file unchanged; a file with no source value starts at 1.0.
 - **volume_att** - LINEAR distance attenuation `(max_dist - dist)/(max_dist - min_dist)` (`SoundRender_Emitter_FSM.cpp`): full at `min_distance`, silent at `max_distance`, NOT inverse-square.
   On top of it OpenAL applies its OWN inverse-distance rolloff keyed on the blob min (`AL_REFERENCE_DISTANCE`, never disabled by the engine), and the two multiply (see `sound-source-and-emitter.md`,
-  "The OpenAL layer"). This is why placement must use the author's channel band. The whole stack is what the author leveled against.
-  The AUTHOR's min/max sit in the blob (the engine reads them) and in the config (the trace readout).
+  "The OpenAL layer"). The measured min/max sit in the blob (the engine reads them) and in the config (the trace readout), and the spawn band is placed within the same reach, so the fade curve and the placement are one consistent geometry.
 - **stereo** - the engine force-2Ds any 2-channel buffer (`Core.cpp`: `channels==2 -> switch_to_2D`), and the 2D path skips BOTH attenuation and occlusion (`Emitter_FSM.cpp`:
   `volume_att = p_source.volume`, `occ = 1`), so a stereo sound plays at-ear at full loudness wherever it is placed, the "one sound too loud" blare. Only MONO is spatialised,
   so intake FOLDS every stereo file to mono (`fold.fold_to_mono`: sum (L+R)/2, or drop the left channel for an anti-phase pair, chosen by `fold.stereo_method`). Proven from the source.
 
 ### Coexistence with a base soundscape - the loudness balance
 
-DiegeticDread does NOT RE-LEVEL its corpus. Each sound keeps its author's own base_volume (~0.5-2.0), except where the loudness floor lifts a too-quiet file toward faint-audible (lift-only, above).
-The director plays each sound from its author's own channel spawn band through the vanilla placement code, so its PLAYED loudness is the source mod's,
-minus the floor's correction for the un-audibly quiet. The authored levels are field-tested and sit in the range a typical base bed occupies, so the horror sits IN the mix rather than on top of it.
-The one runtime control that balances the two is the MCM master `vol_global` (multiplied into the play volume in `play_sound` alongside the game ambient slider),
-for a base that runs unusually loud or quiet. Nothing about the mix depends on the player leveling anything.
+Every sound is leveled into one loudness band by the measured model (floor -36, ceiling -18, off the measured LUFS at the reach/2 placement), so the corpus is even without a per-sound target and
+nothing screams or drops out. The director places each sound within its category reach through the vanilla placement code, so the horror sits IN the mix at a controlled level rather than on top of it.
+The one runtime control that balances the two is the MCM master `vol_global` (multiplied into the play volume in `play_sound` alongside the game ambient slider), for a base that runs unusually loud or
+quiet. Nothing about the mix depends on the player leveling anything.
 
-So everything per-file is the AUTHOR's: `base_volume` (lifted only by the loudness floor for the too-quiet), `max` unchanged, the spawn band, `indoor` flag, and `height` from the source channel,
-with two corrected fields the pack tooling never authored, the min_distance floor and the base_volume loudness floor (above).
+So every per-file blob value is the measured model's: `base_volume` bounded into the loudness band, min and max from the reach and the measured crest, the spawn band from the reach, and
+`height` curation-authored at emit. The director reads no `indoor` flag. No source min, max, or spawn band reaches the blob; the source base_volume survives only inside the band.
 
 ### Visual layer
 
@@ -412,8 +382,8 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 
 - Audio is byte for byte, proven. Each intake self-verifies every shipped file's audio hash against its source before the record commits. The record stands at every file matched, no mismatch,
   comment-blob-agnostic so a written blob does not count as a change.
-- Volume and distance sit in the X-Ray blob. A source file that shipped with a blob keeps it exact. A blob-less file gets the category-folder median, base_volume 1.0,
-  which is an approximation and is booked as one.
+- Volume and distance sit in the X-Ray blob, rewritten to the measured model (min/max from the reach and the measured crest, base_volume into the loudness band). No source blob is kept, so a
+  blob-less file is no exception: base_volume simply starts at 1.0 before the band.
 - The record is RESOURCES-ALONE: a sound's identity is its audio (the content-hash name), not a pack or a path, so there is no `provenance.tsv` and no origin map. Nothing to lose under the rename.
 - Full dark coverage is proven per intake, not stored as a file: every source dark sound must be shipped, booked (dead-silent, off-rate, long-culled), or an intra-corpus re-encode of a
   shipped sound, each decided by audio. The intake FAILS on any uncaptured dark file. The invariant is `UNUSED-DARK = 0`. No net-new dark sound is left uncaptured.
@@ -432,19 +402,17 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
   Deduplication runs among the source packs, never against the target modpack.
 - I4 Fitness is codec plus sample rate: 44100 Hz vorbis. Off-spec files are dropped and accounted.
 - I5 Ship byte for byte where nothing must change, and transform where the engine forces it and book it. A MONO file's audio pages are its own, untouched,
-  and only the X-Ray blob is rewritten losslessly, carrying the AUTHOR's own base_volume and max (`_normalize_blobs`) with no corpus re-level, plus TWO declared LIFT-ONLY corrections:
-  the min_distance floor (fixing the field the pack tooling left at the unset default) and the base_volume loudness floor (lifting content too quiet to be audible). See "Byte-for-byte audio".
-  A file that never carried a blob gets its category-folder median, then the same floors. One step re-encodes: every STEREO file is folded to mono
-  (`fold.fold_to_mono`) because the engine 3D-positions mono only (its author's blob is captured pre-fold and re-written, so the fold does not lose the
-  author's values); the fold is mechanical and deterministic. A bed too long for the emission window is long-culled, not cut; cutting a bed into pieces
-  makes new sounds (authoring), done by hand and documented (sound-manager/mined-sources.md), never in the intake.
+  and only the X-Ray blob is rewritten losslessly to the measured model (`ogg.write_blob`): min and max from the category reach and the measured crest, base_volume bounded into the floor/ceiling
+  loudness band off the measured LUFS. No source min, max, or base_volume is preserved in the blob. See "Byte-for-byte audio". One step re-encodes: every STEREO file is folded to mono
+  (`fold.fold_to_mono`) because the engine 3D-positions mono only; the fold is mechanical and deterministic, and the source blob is captured pre-fold as an audit column the master ignores.
+  A bed too long for the emission window is long-culled, not cut; cutting a bed into pieces makes new sounds (authoring), done by hand and documented (the private per-mod history), never in the intake.
 - I6 Capture from folder trees, not the wired files alone. The per-intake coverage gate is what drives UNUSED-DARK to 0, and it BLOCKS the commit.
 - I7 Selection is manual and per-pack. A pack's folders are mapped to categories by hand in `ROUTE` after the pack is assessed. The folder-path match only pulls.
 - I8 Remove, do not inject. The static DLTX overlay removes a base sound the mod ships from its channel, matched by audio identity, per item.
   It never adds a channel and never injects a sound into the base ambient. The base's other sounds are untouched.
 - I9 Dark scope only. Keep spook, horror, underground, eerie, and oppressive weather. Leave generic daytime life and the base weather bed to the base ambience.
 - I10 Leave emission alone. Blowout and psi-storm are their own system and are never touched.
-- I11 Reproducible. refresh regenerates the blobs and the runtime display columns from the record's PERSISTED columns (the full-precision author blob, the authored band, the measured facts) deterministically - same inputs, same bytes, no packs; a double refresh writes nothing.
+- I11 Reproducible. refresh regenerates the blobs and the runtime display columns deterministically from the measured facts (lufs/crest) and the category reach - no packs, and no author min, max, or band read; same inputs, same bytes, and a double refresh writes nothing.
   The base-exclusion overlay is the one committed artifact refresh does NOT emit: the tool's layout scan across all the mods discovers the removal set, and the overlay is authored by hand from it
   and tested against the mods.
 - I12 Resources-alone, one record. A shipped sound's identity is its audio (the content-hash name); the record - `dd_sound_metadata.script`, the same file the director loads - keeps no source pack or path, and there is no other state file (no manifest, no measurement cache). Full dark coverage is proven per intake (`UNUSED-DARK = 0`), not stored. Sources are credited collectively in the readme per the attribution policy, which never names a build on a public surface.
@@ -477,14 +445,14 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
 
 - The measured surface, the shared audio core in `sound-manager/core/` (stalker-dev), tools from `$PORTX_ROOT/packages`. One `ffmpeg` `astats`+`ebur128` pass reads `lufs` (integrated loudness),
   `crest` (peak minus RMS), and `peak` (true peak). `ffprobe` reads `dur`, `sample_rate`, `channels`, and `bit_rate`. Chromaprint `fpcalc` reads the fingerprint `fp`, and the fold reads mid/side RMS.
-- Where each value is used. Pipeline-time, each drives one step: `lufs`/`crest` the base_volume loudness floor and (`crest`) the min-distance ratio, `peak` the dead-file decode-artifact clamp,
+- Where each value is used. Pipeline-time, each drives one step: `lufs`/`crest` the base_volume loudness floor/ceiling band and (`crest`) the min-distance ratio off the reach, `peak` the dead-file decode-artifact clamp,
   `dur` the long-file cull, `sample_rate` the 44100 fitness gate, `channels` the stereo fold, `bit_rate` the dedup quality-winner pick, `fp` the dedup candidate stage
   (decided by PCM cross-correlation), mid/side RMS the fold sum-vs-drop split. Read at RUNTIME, both sets frozen in `dd_sound_metadata` at refresh: `lufs`/`crest`/`peak`/`bv`/`mn`/`mx` feed
   `xsound.compute_delivered_loudness` for the `[PLAY]`/`[BASE]` trace and the review player, and `ch_min`/`ch_max`/`h`/`indoor` feed the director's `get_placement`.
 - Committed data in this repo: `dd_sound_metadata.script` (the corpus record AND the runtime table, one file) and the ogg tree. The authored intake recipe (registry, routes, excludes) is private in the tool, `sound-manager/private/dread/recipe.yaml`.
   No manifest, no measurement cache, no provenance or ledger file: the measured facts live on each record row, dark coverage is proven per intake, and a sound's identity is its audio.
 - The tool is `sound-manager` in stalker-dev, and this repo holds data only. `intake DiegeticDread <Source>` is the once-per-pack ingest, and `refresh DiegeticDread` is the forever path
-  (blobs, metadata, verify, audit) with no packs required. The base-exclusion overlay is hand-authored, not a refresh output; the tool's cross-mod layout scan is the knowledge it is written from.
+  (blobs, metadata, verify, audit) with no packs required. The base-exclusion overlay is hand-authored, not a refresh output; `verify` only simulates it against the installed layouts (the empty-bed gate).
 
 A new pack is adopted by hand first. Audition it, author its recipe rows (registry entry + route rows) in the private recipe, then run `intake DiegeticDread <Source>`.
 The coverage gate (UNUSED-DARK = 0) audits the authoring. The pack is deletable once intake writes TARGET, and the record is committed when you promote TARGET into this repo by hand.
