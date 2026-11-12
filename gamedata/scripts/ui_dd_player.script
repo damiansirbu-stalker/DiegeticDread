@@ -290,7 +290,7 @@ end
 function dd_player_wnd:format_loud()
     if not _cur then return "loud:   (none)" end
     local prof = xsound and xsound.get_meta and xsound.get_meta(_cur.path)
-    if not prof then return "loud:   -- (no profile; run build.py deploy)" end
+    if not prof then return "loud:   -- (no profile)" end
     local mode = _get_mode()
     local dist
     if mode.kind == KIND_DIST then

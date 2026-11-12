@@ -28,7 +28,7 @@ The category is the unit of organization and of play. It is a directory of sound
 with no weight and no cooldown. Dread lives per-sound. `dd_spooks_metadata` (the `sounds` table, `["deployed-name"] = { dread = "low"|"med"|"high" }`) is the single source of a sound's dread.
 A sound with no override plays at EVERY scene dread (the default), and an overridden one plays ONLY at its dread. Curating a sound is adding one line to that table, keyed by the stable deployed name,
 and it survives every intake and refresh (dread lives in the hand-curated table, never in the tree). The director reads the generated sound config (`dd_sound_metadata.script`) that lists each category,
-then that category's flat sound list, each row a named-field table: its blob min/max pair, its spawn band (ch_min/ch_max, derived from the reach) and `indoor` flag, its height,
+then that category's flat sound list, each row a named-field table: its blob min/max pair, its spawn band (ch_min/ch_max, derived from the reach), its height,
 and its measured loudness (`lufs`/`crest`/`bv`). The director also flattens those rows into `xsound.load_meta`, so any consumer can read a sound's delivered loudness.
 It applies the dread override at load to build the per-dread pools. The config replaces the channel definitions the director used to read from `sound_channels.ltx`.
 Anomaly Lua cannot enumerate a directory at runtime, so the deploy writes the config and the director reads it. See "Categories - the rule table" below.
@@ -75,7 +75,7 @@ To adopt a pack, the curator points intake at its folder. Every net-new sound th
 ### Identity and the corpus of record
 
 Each file is named by content: `zs/<category>/<origname>_<audiohash>.ogg`, the hash an md5 of the audio pages only (blob-agnostic), short form. The name is readable and keeps the source name.
-The hash disambiguates the generic `sound_NN` names 27 packs share, and identical audio always maps to the same name, so adding content never renames anything.
+The hash disambiguates the generic `sound_NN` names 27 packs share, and a file's name comes from its own content. Adding content never renames anything.
 The record row key is `<category>/<name>`, category-qualified because one pack ships identical audio in two folders routed to two categories (the labs/drone twins).
 
 The corpus of record is `dd_sound_metadata.script` ITSELF, the same file the director loads. Its rows follow the uniform sound schema every Diegetic sound shares.
@@ -115,7 +115,8 @@ It never drops a sound because the install already plays it. Doubling with the b
 
 A MONO sound's AUDIO ships byte for byte with no re-encode, the vorbis pages untouched. What refresh writes is only the X-Ray ogg comment blob (min distance, max distance, base_volume),
 a lossless header-page rewrite that leaves the audio pages identical while it recomputes the blob from the measured model (below).
-A STEREO sound is the exception. Because the engine cannot 3D-position it, intake folds it to mono (re-encoded) before hashing.
+A STEREO sound is one exception. Because the engine cannot 3D-position it, intake folds it to mono (re-encoded) before hashing.
+An off-rate sound is the other. Intake resamples it, because the engine rejects any rate but 44100.
 The source's own blob is captured before the fold and kept as an audit column. The measured master does not read it.
 
 Blob contract (the engine-read fields). The `0x0003` comment struct (`SoundRender_Source_loader.cpp`) holds five fields: `min`, `max`, `base_volume`, `game_type`, and `max_ai_dist`.
@@ -133,7 +134,8 @@ A `world_ambient` play with an owner would make NPCs hear the sound, which the d
   The min is the measured crest floor off the farthest placement. A sustained low-crest bed carries at distance, and a sharp high-crest transient stays near-field.
   base_volume starts at 1.0 and is bounded into the loudness band off the measured LUFS (ffmpeg ebur128).
   A file that delivers quieter than the floor (-36 dB) at its placement is lifted toward it, and one louder than the ceiling (-18 dB) is pulled toward it.
-  Each move closes 0.7 of the gap. The lift is capped at the far placement, which keeps the distance falloff alive under the engine's 1.0 gain clamp.
+  Each move closes 0.7 of the gap. The lift is capped at the far placement, and the cap is set for the game's effects volume at 0.5.
+  Above that setting the engine's 1.0 gain clamp takes part of the lift.
   The same audio and reach give the same blob every run.
 - Reach is the one tunable, per content, never per sound. A category that plays too loud or too far has a wrong reach value.
   Fixing it once moves every sound in the category on the next refresh.
@@ -144,7 +146,7 @@ A `world_ambient` play with an owner would make NPCs hear the sound, which the d
 
 The config (`dd_sound_metadata.script`, also the corpus record) carries per sound the blob min/max pair (read back from the deployed ogg, trace readout only), the spawn band the director places within (ch_min/ch_max, derived from the reach), the height, and the measured `lufs`/`crest`/`peak`/`bv` fed to `xsound.load_meta` for the delivered-loudness readout.
 
-Fitness gate: 44100 Hz vorbis only, the X-Ray standard. Off-rate and junk-bitrate files are dropped and accounted, never silently. The 44100 rule is the engine's own.
+Fitness: 44100 Hz vorbis only, the X-Ray standard. Intake resamples an off-rate file, and it drops a file under 32 kbps when the pack holds a better copy. The 44100 rule is the engine's own.
 `CSoundRender_Source::LoadWave` hard-rejects any other rate (`SoundRender_Source_loader.cpp`, returns false). `xrSound` has NO resampler and decodes to PCM, then plays the file as decoded.
 No runtime step downsamples or re-compresses, so shipped audio is exactly its source quality.
 A low-bitrate survivor is an old low-bitrate source kept because it is the best copy available (see Deduplication).
@@ -183,15 +185,16 @@ later, EVENT (bumped by callbacks, decayed). A sensor's fields match what is use
 ### Power - man and monster on one scale
 
 Every hostile near thing is graded "none"|"low"|"med"|"high" by `get_power_tier(rank)`. A stalker's `character_rank()` (0-27000, cuts 9000/14500) and a monster's `se:rank()` (1-20,
-cuts 5/16) collapse to the SAME token. So `stalkers.enemy_near` and `monsters.enemy_near` are the same type, and threat reads both with one rule (`max`).
+cuts 6/17) collapse to the SAME token. So `stalkers.enemy_near` and `monsters.enemy_near` are the same type, and threat reads both with one rule (`max`).
 The cuts sit on the engine's own rank scales, a stalker's `character_rank()` and a monster's `se:rank()`.
 
 ### The loop and the emission gate
 
 The loop runs a fixed 100ms and never stops, so a rising dread is always caught, and the board refreshes over the producer rotation. Emission is separate:
-the gap between plays scales with the CURRENT dread, from a calm mean of ~32s (`SPACE_CALM_MS`, silence carries the dread) to a peak mean of ~6.5s (`SPACE_PEAK_MS`),
-power-eased off the calm end (`SPACE_EASE`) so mid-dread lands ~15s (drops fast then fine-grades toward peak), with a `SPACE_JITTER` spread. The gap is re-evaluated every 100ms against the live dread,
-so a rising dread tightens it at once and a threat that appears mid-calm-gap fires promptly even during the long calm interval.
+the gap between plays scales with the CURRENT dread, from a calm mean of 40s (`SPACE_CALM_MS`, silence carries the dread) to a peak mean of about 8s (`SPACE_PEAK_MS`),
+power-eased off the calm end (`SPACE_EASE`). Mid-dread sits near 17s (drops fast then fine-grades toward peak), with a `SPACE_JITTER` spread.
+The gap is re-evaluated every 100ms against the live dread.
+A rising dread tightens it at once, and a threat that appears mid-calm-gap fires promptly even during the long calm interval.
 This targets the base's COMBINED felt rate (vanilla horror channels average 45-70s each but run ~5 concurrently, ~14s combined, and the modern packs ~5s combined) with a single stream,
 kept sparser at calm because horror pacing builds dread through silence and keeps strong scares rare. Nothing emits only at dread 0 (a safe hub or a fully-calmed place).
 Any dread above 0 plays, and it grows sparser the calmer it is, while the loop keeps sensing and the gap keeps advancing so a resumed dread emits at once.
@@ -254,8 +257,10 @@ The base game's `update_ambient` code places each emitted sound. `get_placement`
 Under the measured model the category's reach sets the spawn band. ch_max is the reach and ch_min is 0.6 times it, one pair for every sound in the category.
 The blob falloff (min/max) and the spawn band come from that one reach and always agree. Every sound has a band whether or not a pack ever wired it.
 Placement goes through the vanilla transform: `random(spawn_min, ch_max)/2` (spawn_min = (ch_max+ch_min)/2 outdoors, ch_min underground), a random bearing, and `pos.y + height`.
-The play volume is the game ambient slider times the MCM master `vol_global` (1.0 = untouched). `is_eligible` already matched the category to the environment,
-and xray's occlusion raycast muffles walls (`SoundRender_Emitter_FSM.cpp:386`). Only the base replay applies the vanilla indoor/outdoor/underground table.
+The play volume is the game ambient slider times the MCM master `vol_global` (1.0 = untouched).
+X-Ray uses that volume as the upper bound of the linear falloff, not as a gain (`SoundRender_Emitter_FSM.cpp`). Below 1 it quiets the near plays, and above 1 it changes almost nothing.
+`is_eligible` already matched the category to the environment, and xray's occlusion raycast muffles walls (`SoundRender_Emitter_FSM.cpp`).
+Only the base replay applies the vanilla indoor/outdoor/underground table.
 The heard loudness at that distance is the engine's attenuation on the MEASURED blob, and the director decides only WHEN and WHAT. The two distance pairs are never conflated: the blob min/max is the
 FADE curve, the spawn band ch_min/ch_max is the SPAWN radius, and both come from the reach. The blob min also drives OpenAL's inverse rolloff.
 Height is the category's elevation from the tool's height table, carried as `snd.h`. Birds play 10 m up, rats 1 m down, and everything else at the player's level.
@@ -390,20 +395,20 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 - Performance first. Performance is the top priority and outranks features. A feature that cannot meet the budget is reworked or removed with an X-Ray engine modification,
   never kept at the cost of the budget. Only correctness and never breaking base gameplay rank above it.
 - Use the engine, don't work around it. Every capability comes from the engine and the Anomaly layer first, always through xlibs. Our own code enters only where stock behavior falls short.
-- I1 Play once, no loops. The director fires every sound once through `xsound.play_at` (retained handle, stoppable). There is no loop layer and no continuous bed. A long sound plays on a long period,
-  tuned to its measured duration.
+- I1 Play once, no loops. The director fires every sound once through `xsound.play_at` (retained handle, stoppable).
+  There is no loop layer and no continuous bed. A long sound plays once, like any other.
 - I2 No channels for our content. Sounds live FLAT in category directories (`zs/<category>/<name>.ogg`) and are named by the sound config (`dd_sound_metadata.script`),
   with dread the per-sound `dd_spooks_metadata` override. The deploy defines no `sound_channels.ltx` channels for our content. The one config that touches base channels is the hand-authored DLTX exclusion overlay,
   which REMOVES our sounds from existing base channels and never adds one. The engine ambient bed and its asserted channels stay intact, so nothing can cause a missing-channel crash.
 - I3 Deduplicate by the waveform, source side only. md5 then Chromaprint fingerprint then PCM cross-correlation, complete linkage at 0.90. Distinct variety is never merged.
   Deduplication runs among the source packs, never against the target modpack.
-- I4 Fitness is codec plus sample rate: 44100 Hz vorbis. Off-spec files are dropped and accounted.
+- I4 Fitness is codec plus sample rate: 44100 Hz vorbis. Intake resamples an off-rate file.
 - I5 Ship byte for byte where nothing must change, and transform where the engine forces it and book it. A MONO file's audio pages are its own, untouched,
   and only the X-Ray blob is rewritten losslessly to the measured model.
   The category reach and the measured crest set min and max. base_volume is bounded into the floor/ceiling loudness band off the measured LUFS.
   No source min, max, or base_volume is preserved in the blob. See "Byte-for-byte audio".
-  Exactly one step re-encodes: intake folds every STEREO file to mono, because the engine 3D-positions mono only.
-  The fold is mechanical and deterministic. The source blob is captured before it as an audit column the master ignores.
+  Two steps re-encode the audio. Intake folds every STEREO file to mono, because the engine 3D-positions mono only, and it resamples an off-rate file.
+  Both are mechanical and deterministic. The source blob is captured before it as an audit column the master ignores.
   Cutting a long bed into pieces makes new sounds. It is authoring, done by hand and logged, never in the intake.
 - I6 Take every sound a pack holds, wired or not. Intake reads the pack's whole sound tree, because the packs ship far more than their channel configs list.
 - I7 Sorting is manual and per sound. Intake decides no category. Every net-new sound waits in `holding`, and verify refuses the tree until each one is sorted or rejected.
@@ -440,7 +445,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
   Below DEBUG the off path marshals nothing and crosses no luabind bridge.
 - `dd_mcm.script` is one MCM page tree. Atmosphere holds a single master volume for our sounds (no per-category sliders), also the balance control between the horror and the player's base ambience,
   since the mod levels only its own corpus (see "Coexistence with a base soundscape"). Visuals toggles the peak-dread screen distortion. Development holds the trace level, a log flush,
-  the debug HUD position, the sound-player dev toggle (the review player), and a reset-to-defaults button. Every control is neutral at its default. Labels are in English and Russian.
+  the debug HUD position, the sound-player dev toggle (the review player), and a reset-to-defaults button. Every control is neutral at its default. Labels are in English.
 
 ## Tools and data artifacts
 

@@ -95,8 +95,8 @@ By default a sound plays at every dread level.
 You can hold a calm sound to quiet scenes and a scare to tense ones, so the palette shifts as the dread climbs.
 That tuning is per-sound, hand-set, and separate from the audio, so it survives every rebuild of the library.
 
-The director places each sound in 3D around and above you, at the distance its own author chose.
-It uses the same placement the game's ambient system uses, so a sound plays as it did in the mod it came from.
+The director places each sound in 3D around and above you, inside a distance band set for its category.
+It rolls that position the way the game's own ambient system does, and the sound sits in the world like a base ambient cue.
 A sound meant to come from overhead still does.
 Every sound is mono, the only form the engine places in 3D, so nothing sticks flat at your ear.
 A long drone or the radio signal plays as a spaced sound on a long period.
@@ -106,7 +106,7 @@ A long drone or the radio signal plays as a spaced sound on a long period.
 
 If you also run a soundscape pack it drew from, that pack's ambient plays the same sounds.
 DiegeticDread removes its own sounds from the base's ambient channels, so only its curated version plays, under its director.
-It does this statically at config load, with a generated overlay that strips each of the mod's sounds out of every base channel that plays it, matched by the sound's own audio rather than by a filename.
+It does this statically at config load. A hand-written overlay strips each of the mod's sounds out of every base channel that plays it, matched by the sound's own audio rather than by a filename.
 A sound can ship in more than one pack. The copies include exact reships and re-encodes. It removes every one. Whichever pack you run, the base loses its version.
 The base keeps everything else it plays.
 It removes exact sounds only. It leaves every folder, channel, wind bed, and creature call the mod does not carry.
@@ -119,19 +119,20 @@ Whichever base you run, it keeps its own atmosphere.
 Measurement drives every choice here, not taste.
 The build is a reproducible pipeline, run by command and the same every time.
 It measures every sound before it goes in.
-ffmpeg reads its integrated loudness in EBU R128 LUFS, its crest factor, and its true peak.
+ffmpeg reads its integrated loudness in EBU R128 LUFS, its crest factor, and its peak.
 ffprobe reads its duration, sample rate, channel count, and bitrate. Chromaprint fingerprints it, and the fold reads its mid and side energy.
-Each value has a use in the build below. Loudness and crest set the floor and the distance ratio. Peak guards the dead-file cull, and duration drives the long-file cull.
+Each value has a use in the build below. Loudness and crest set the floor and the distance ratio. Loudness also flags a dead file for review, and duration narrows the duplicate search.
 Sample rate holds the 44.1 kHz gate, channel count the fold, bitrate the duplicate pick, and the fingerprint and mid/side energy the dedup and fold.
 Six values are frozen into each sound's metadata and read back in game: its loudness, crest, peak, volume, and near and far distance.
 The director and the in-game trace read them to report how loud a sound arrives where it plays.
-The director also reads each sound's spawn band, height, and indoor flag to place it in 3D around and above you.
-Each pack's folders map to horror categories by hand, and the build pulls every file in them, so it misses nothing the pack buries.
-The build drops a sound too long to play whole. Cutting a long bed into pieces makes new sounds and is a manual step, not the build.
-Each file keeps its author's own loudness, the X-Ray gain set in the ogg comment, written back unchanged. No leveling.
-The authored levels are tight and field-tested in the source mods, so the corpus already plays even.
-Dread comes from where the director places a sound, not from re-leveling one file against the next.
-The gain is a number in the header, so the audio is never re-encoded.
+The director also reads each sound's spawn band and height to place it in 3D around and above you.
+The build takes every sound a pack holds, wired or not, and each one is sorted into a horror category by hand.
+Cutting a long bed into pieces makes new sounds, and it is a manual step.
+The build levels every file from its own measurement. No value a pack author set reaches the game.
+The far distance is the category's reach, taken from the base game's own ambient distances.
+The near distance follows the crest. A sustained tone carries, and a sharp one stays close.
+The gain starts at 1.0. A file that arrives too quiet at its farthest placement is lifted part of the way, and one that arrives too loud is pulled down.
+All three are numbers in the ogg header, and the audio is never re-encoded for them.
 
 Identity is the waveform, decided in three stages, cheapest first.
 An md5 hash collapses byte-identical reships.
@@ -141,16 +142,15 @@ Files merge only under complete linkage, so a similarity chain never collapses t
 This runs among the source packs only.
 The mod never drops a sound because your install already plays it. It carries the full corpus and removes the base copy at load instead.
 
-Mono ships byte for byte, audio untouched, carrying its author's volume and distance band in the ogg comment.
-Stereo is the one exception. The engine cannot place it in 3D, so the build folds it to mono and then writes the comment, the author's values captured before the fold.
-A file that lacks that metadata gets it losslessly, the median of its category band, so only the header changes.
+Mono at 44.1 kHz ships with its audio unchanged. Only the header changes.
+Stereo is one exception. The engine cannot place it in 3D, and the build folds it to mono.
+A file at another sample rate is the other. The engine refuses it, and the build resamples it.
 Most of this corpus never played where it came from.
 Their packs carried two thirds of the files but wired them into no channel, so their own schedulers never played them.
 Most of the rest carry an unset engine distance field that silences a sound more than a few meters away.
-The build corrects that one field to the game's own far-ambience standard.
-Thousands of sounds that existed only as files on disk now play in the world, at their author's loudness, for the first time.
-A fitness gate keeps 44.1 kHz vorbis, the X-Ray standard, and accounts anything dropped.
-A per-pack coverage check proves the build misses no dark sound.
+The build sets that field from measurement.
+Thousands of sounds that existed only as files on disk now play in the world for the first time.
+Every shipped file is mono 44.1 kHz vorbis, the only form X-Ray loads and places in 3D.
 The record names no source mod or path; a sound's identity is its own audio.
 The director reads cheap signals every few seconds, never per frame, then caches them. The cost stays a slow timer whatever is on screen.
 
@@ -159,7 +159,7 @@ MCM:
 The MCM has three tabs.
 Atmosphere holds one master volume for the mod's sounds plus rarity.
 That volume also balances the horror against your base ambience.
-The mod plays each sound at its author's loudness and never touches the base.
+The mod levels only its own sounds and never touches the base.
 So if your soundscape mod sits louder or quieter, this slider sets the dread against it.
 There are no per-category sliders.
 Visuals toggles the screen distortion at peak dread.
@@ -196,9 +196,9 @@ See the Health and JitProfiler links up top for every test and smoke result, and
 
 Sound Mastering:
 
-An EBU R128 scan reads each sound's integrated loudness in LUFS, crest factor, and true peak (ffmpeg ebur128, astats).
+An EBU R128 scan reads each sound's integrated loudness in LUFS, crest factor, and peak (ffmpeg ebur128, astats).
 The build folds stereo to mono and resamples to 44.1 kHz so the engine can place the sound in 3D around you (ffmpeg).
-Exact hash, audio hash, acoustic fingerprint, and waveform cross-correlation catch every duplicate, down to the re-encodes a filename hides (md5, Chromaprint, PCM xcorr).
+Exact hash, audio hash, acoustic fingerprint, and waveform cross-correlation catch duplicates down to the re-encodes a filename hides (md5, Chromaprint, PCM xcorr).
 Neural tagging trained on AudioSet names what each sound is (PANNs CNN14).
 A language-audio model classifies each sound as indoor or outdoor (CLAP).
 Whisper transcribes the Russian voice lines (faster-whisper).

@@ -9,8 +9,7 @@ local RegisterScriptCallback, GetEvent, alife_object = RegisterScriptCallback, G
 -- Metres from the actor a test spawn lands.
 local DEFAULT_TEST_DIST_M = 5
 
--- SND_OURS: one of our shipped sounds; SND_VANILLA: a known-good loud vanilla sound for the A/B check.
-local SND_OURS    = "zs\\spook\\1"
+-- SND_VANILLA: a known-good loud vanilla sound for the A/B check against one of our shipped sounds.
 local SND_VANILLA = "anomaly\\emi_blowout"
 
 local SMOKE_GAP_MS = 700
@@ -283,10 +282,17 @@ local function _spawn_variant(sec, sim, pos, lvid, gvid, log)
         tostring(se and se:rank() or "nil"))
 end
 
+--- The first spook row of the shipped record, the sound the test plays (names carry a content hash, so none is fixed).
+local function _get_test_sound()
+    local spook = dd_sound_metadata and dd_sound_metadata.categories and dd_sound_metadata.categories.spook
+    return spook and spook[1] and spook[1].path
+end
+
 --- Fire the test play 3s after the call so it lands during live gameplay; close the console after running.
 function dd_test.play_sound(method, dist)
     dist = dist or DEFAULT_TEST_DIST_M
-    local path = (method == 5) and SND_VANILLA or SND_OURS
+    local path = (method == 5) and SND_VANILLA or _get_test_sound()
+    if not path then _show_tip("snd: no spook sound in dd_sound_metadata"); return end
     RemoveTimeEvent("dd_snd", "play")
     CreateTimeEvent("dd_snd", "play", 3, function()
         local actor = db.actor

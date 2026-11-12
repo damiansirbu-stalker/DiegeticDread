@@ -55,7 +55,7 @@ local DAY_END_HOUR = 19
 local DUSK_END_HOUR = 21
 local DAWN_START_HOUR = 5
 local DEEP_NIGHT_END_HOUR = 4
--- Rank cut points (see doc/library/modding/npc-strength-evaluation.md; probe-verified cross-install).
+-- Rank cut points on the game's own rank scales (probe-verified cross-install).
 local STALKER_MED, STALKER_HIGH = 9000, 14500
 local MONSTER_MED, MONSTER_HIGH = 6, 17
 
@@ -258,7 +258,7 @@ local function _load_channels()
     if _loaded then return end
     _loaded = true
     if not dd_sound_metadata then
-        dd_debug.warn("dd_director: dd_sound_metadata absent - no sounds to play (run build.py deploy)")
+        dd_debug.warn("dd_director: dd_sound_metadata absent - no sounds to play")
     end
     local cats = dd_sound_metadata and dd_sound_metadata.categories or {}
     for name in pairs(CATEGORY) do
@@ -719,7 +719,7 @@ local function _on_first_update()
     dd_debug.info("dd_director: armed - sensor-board director on tick; base observer on update_ambient; source-band placement")
 end
 
--- Predicted-audibility floor for the trace token (delivered-dB), mirroring the pipeline LOUD_FLOOR (build.py).
+-- Predicted-audibility floor for the trace token (delivered-dB), the loudness floor the build masters against.
 local AUDIBLE_FLOOR = -36.0
 
 --- Predicted audibility from the delivered loudness: SILENT (no reach), FAINT (below the floor), AUD.
