@@ -629,7 +629,7 @@ local function play_base_channel(ch, tg)
     if dd_debug.is_on() then
         local d3d = math_sqrt(dist * dist + ch.height * ch.height)
         dd_debug.debug("[BASE] lvl=%s ch=%s file=%s%s vol=%.2f",
-            level.name(), ch.name, tostring(file), _build_detail(tostring(file), d3d), vol)
+            level.name(), ch.name, tostring(file), _build_detail(tostring(file), d3d, vol), vol)
     end
 end
 
@@ -732,12 +732,12 @@ local function _get_verdict(dlv)
 end
 
 --- The acoustic tail for [PLAY]/[BASE]: distance, delivered dB, verdict, profile loudness (lufs/crest/peak/bv), enclosure. "" without a profile.
---- Reuses the same xsound calls the review player readout makes.
-function _build_detail(path, dist)
+--- Reuses the same xsound calls the review player readout makes; vol is the play's script volume.
+function _build_detail(path, dist, vol)
     if not (xsound and xsound.get_meta) then return "" end
     local prof = xsound.get_meta(path)
     if not prof then return "" end
-    local dlv = xsound.compute_delivered_loudness(prof, dist)
+    local dlv = xsound.compute_delivered_loudness(prof, dist, vol)
     return string_format(" dist=%s dlv=%s vd=%s lufs=%.0f crest=%.0f peak=%s bv=%.2f env=%s",
         dist and string_format("%.0f", dist) or "-",
         dlv and string_format("%.0f", dlv) or "-",
@@ -761,7 +761,7 @@ function play_sound(path, opts)
         local d3d = math_sqrt(dist * dist + height * height)
         dd_debug.debug("[PLAY] %s band=%.0f-%.0f h=%.0f%s vol=%.2f dread=%.2f",
             path, opts.ch_min or 0, opts.ch_max or 0, height,
-            _build_detail(path, d3d), vol, opts.dread or 0)
+            _build_detail(path, d3d, vol), vol, opts.dread or 0)
     end
     return dist
 end

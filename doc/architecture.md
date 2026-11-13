@@ -440,6 +440,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
   or at-ear. It curates by LOGGING only and never moves or deletes a file. Fifteen one-word tag buttons in five labelled zones - type (outside, inside), level (low, med, high), vol (inaudible, faint, loud, painful), dist (close, far), fate (keep, cut, release, dupe) - and a custom free-text field write `[SOUND]` note lines,
   and a separate PROBE NOTE field writes a `[PROBE]` block with the full ordered sensor dump. Both go to `diegeticdread_notes.txt` (a clean, human-read notes file,
   distinct from the diagnostic `diegeticdread_probe.log`), written by `dd_test.log_sound_note` / `dd_test.log_probe_note`.
+  Its loudness line reads a director mode at the farthest play, which sits at half the band max, pulled in by the mode's dread and lifted by the row height.
   The window owns the keyboard only so its text fields capture typing (a PDA-subdialog editbox never could). There are no command shortcuts,
   and a focused edit box is detected by the parent `OnKeyboard` return so it never doubles as a command. While the window is open the director is auto-silenced (`dd_director.set_muted`),
   restored on close. It replaces the old PDA tab (`ui_dd_player_tab` / `pda_dynamic_tabs`) and the INSERT note popup (`ui_dd_note`), all retired to `.deleted/`.
