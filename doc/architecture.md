@@ -132,6 +132,7 @@ A `world_ambient` play with an owner would make NPCs hear the sound, which the d
   The max is the category's reach from the tool's reach table, which follows vanilla's `sound_channels.ltx` reach per content.
   Wind and foliage reach 60. Drip, rats and bats reach 90. Labs, industrial and structural reach 115. The mutant kinds reach 150, and every other category 120.
   The min is the measured crest floor off the farthest placement. A sustained low-crest bed carries at distance, and a sharp high-crest transient stays near-field.
+  The crest band was tuned on ffmpeg's linear crest factor. The record holds crest in dB, and the build converts it back for the band.
   base_volume starts at 1.0 and is bounded into the loudness band off the measured LUFS (ffmpeg ebur128).
   A file that delivers quieter than the floor (-36 dB) at its placement is lifted toward it, and one louder than the ceiling (-18 dB) is pulled toward it.
   Each move closes 0.7 of the gap. The lift is capped at the far placement, and the cap is set for the game's effects volume at 0.5.
@@ -258,7 +259,8 @@ Under the measured model the category's reach sets the spawn band. ch_max is the
 The blob falloff (min/max) and the spawn band come from that one reach and always agree. Every sound has a band whether or not a pack ever wired it.
 Placement goes through the vanilla transform: `random(spawn_min, ch_max)/2` (spawn_min = (ch_max+ch_min)/2 outdoors, ch_min underground), a random bearing, and `pos.y + height`.
 The play volume is the game ambient slider times the MCM master `vol_global` (1.0 = untouched).
-X-Ray uses that volume as the upper bound of the linear falloff, not as a gain (`SoundRender_Emitter_FSM.cpp`). Below 1 it quiets the near plays, and above 1 it changes almost nothing.
+X-Ray uses that volume as the upper bound of the linear falloff, not as a gain (`SoundRender_Emitter_FSM.cpp`).
+Below 1 it quiets the near plays. The MCM slider runs 0 to 1, and a saved value above 1 reads as 1.
 `is_eligible` already matched the category to the environment, and xray's occlusion raycast muffles walls (`SoundRender_Emitter_FSM.cpp`).
 Only the base replay applies the vanilla indoor/outdoor/underground table.
 The heard loudness at that distance is the engine's attenuation on the MEASURED blob, and the director decides only WHEN and WHAT. The two distance pairs are never conflated: the blob min/max is the
@@ -450,7 +452,8 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
 ## Tools and data artifacts
 
 - The measured surface, the build tool's shared audio core. One `ffmpeg` `astats`+`ebur128` pass reads `lufs` (integrated loudness),
-  `crest` (peak minus RMS), and `peak` (true peak). `ffprobe` reads `dur`, `sample_rate`, `channels`, and `bit_rate`. Chromaprint `fpcalc` reads the fingerprint `fp`, and the fold reads mid/side RMS.
+  `crest` (peak minus RMS), and `peak` (sample peak). `ffprobe` reads `dur`, `sample_rate`, `channels`, and `bit_rate`.
+  Chromaprint `fpcalc` reads the fingerprint `fp`, and the fold reads mid/side RMS.
 - Where each value is used. Pipeline-time, each drives one step: `lufs`/`crest` the base_volume loudness floor/ceiling band and (`crest`) the min-distance ratio off the reach, `lufs` the dead report,
   `dur` the dedup duration bucket, `sample_rate` the 44100 resample, `channels` the stereo fold, `bit_rate` the dedup quality-winner pick, `fp` the dedup candidate stage
   (decided by PCM cross-correlation), mid/side RMS the fold sum-vs-drop split. Read at RUNTIME, both sets frozen in `dd_sound_metadata` at refresh: `lufs`/`crest`/`peak`/`bv`/`mn`/`mx` feed
