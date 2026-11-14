@@ -65,7 +65,7 @@ local LAB_LEVELS = {
     l13u_warlab = true, l12u_sarcofag = true, l12u_control_monolith = true,
 }
 
--- Per-LEVEL lore dread (the place's own baseline; coordinate overrides supersede this later, n114).
+-- Per-LEVEL lore dread (the place's own baseline).
 local LORE_DEFAULT = 0.15
 local LORE_LEVEL = {
     l12u_control_monolith = 0.50, l10_radar = 0.45, l08u_brainlab = 0.45, l10u_bunker = 0.45,
@@ -77,7 +77,7 @@ local LORE_LEVEL = {
     k00_marsh = 0.20, zaton = 0.20, l04_darkvalley = 0.20,
 }
 
--- Dread value tables (additive, no baseline, clamped 0..1). Tuned for good dread + variation (n119).
+-- Dread value tables (additive, no baseline, clamped 0..1). Tuned for good dread + variation.
 local ENV_ADD      = { outdoor = 0.00, indoor = 0.08, underground = 0.15, labs = 0.25 }
 local TIME_ADD     = { day = 0.00, dawn = 0.04, dusk = 0.05, night = 0.12, deep_night = 0.18 }
 local THREAT_ADD   = { [1] = 0.08, [2] = 0.15, [3] = 0.30 }
