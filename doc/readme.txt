@@ -168,7 +168,7 @@ The in-game HUD reads out the current dread, each term that fed it, what is play
 
 Requirements:
 Anomaly 1.5.3
-Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.55 or newer. The full feature set needs the latest demonized build. A feature that needs a newer one stays inactive on older exes.
+Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.5.2 or newer. The full feature set needs the latest demonized build. A feature that needs a newer one stays inactive on older exes.
 xlibs (plays the sounds, https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM (shows the settings and the trace)
 
