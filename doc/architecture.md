@@ -6,7 +6,7 @@ A runtime director reads where the player stands and who is near.
 It does not add engine ambient channels and it does not edit an ambient file. It plays its own sounds, and it mutes the base game's copy of any sound it also ships.
 
 This document is the method and the invariants. A private build tool masters the corpus, and this repo holds only its output: the record (`dd_sound_metadata.script`) and the ogg tree.
-No source build is named here. `dd_sound_metadata.script` is the corpus record AND the runtime table, one file. The tool reproduces every number below.
+`dd_sound_metadata.script` is the corpus record AND the runtime table, one file. The tool reproduces every number below.
 
 ## Model: a single-sound director, no channels
 
@@ -427,7 +427,6 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
   The base-exclusion overlay is the one committed artifact refresh does NOT emit. It is authored by hand, and verify simulates it against the installed channel layouts.
 - I12 One record, no source kept. A shipped sound's identity is its audio (the content-hash name).
   The record, `dd_sound_metadata.script`, is the same file the director loads. It keeps no source pack or path, and it is the only state file.
-  The readme credits sources collectively per the attribution policy, which never names a build on a public surface.
 - I13 The director owns its own play slot only while active. Without xlibs the director is inert (no play), but the exclusion still holds because it is the static DLTX overlay, independent of xlibs.
   The observer clone resets on hour, level, or weather change, so it never replays a channel for the wrong level, and it guards every value an engine call needs.
 
