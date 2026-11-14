@@ -187,13 +187,6 @@ local function get_power_tier(rank, med, high)
     return "low"
 end
 
---- True if an online NPC fills a base-marking service role (trader/medic/mechanic).
-local function _is_service(npc)
-    if not (xsmart and xsmart.get_npc_roles) then return false end
-    local roles = xsmart.get_npc_roles(npc)
-    return (roles.trader or roles.medic or roles.mechanic) and true or false
-end
-
 --- Sound count of a category (its flat row list from dd_sound_metadata).
 local function _get_sound_count(cat) return cat and #cat or 0 end
 
@@ -357,18 +350,24 @@ local function _add_stalker(id, actor_id, apos, out)
     else
         if POWER[tier] > POWER[out.ally_near] then out.ally_near = tier end
     end
-    if _is_service(npc) then
-        out.service_near = (rel == xconst.RELATION.ENEMY) and SERVICE.HOSTILE or SERVICE.ALLIED
-    end
 end
 
---- Scan the dedicated online-stalker array (db.OnlineStalkers) in one pass.
+--- The nearest trader/medic/mechanic within NEAR_R marks a base: allied, or hostile when that seller is an enemy.
+--- xsmart.find_base_owner also sees the trader-class story traders (Sidorovich) that db.OnlineStalkers never lists.
+local function _get_service_near(apos)
+    local _, _, seller = xsmart.find_base_owner(apos, NEAR_R)
+    if not seller then return "none" end
+    return (xcreature.relation(seller, db.actor) == xconst.RELATION.ENEMY) and SERVICE.HOSTILE or SERVICE.ALLIED
+end
+
+--- Scan the dedicated online-stalker array (db.OnlineStalkers) in one pass, then the nearest service NPC.
 local function _collect_stalkers(actor)
     local out = { online = false, enemy_near = "none", ally_near = "none", service_near = "none" }
     local online = db.OnlineStalkers
     if not online then return out end
     local actor_id, apos = actor:id(), actor:position()
     for i = 1, #online do _add_stalker(online[i], actor_id, apos, out) end
+    out.service_near = _get_service_near(apos)
     return out
 end
 

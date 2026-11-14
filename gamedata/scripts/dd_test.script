@@ -364,7 +364,7 @@ function dd_test.log_suspect(note)
 end
 
 --- Log one atmosphere snapshot with a note. Cheap; run on demand only, never per frame.
---- @safety pcall: the per-check sink wraps string.format on diagnostic args, see doc/library/modding/pcall-safety.md
+--- @safety pcall: the per-check sink wraps string.format on diagnostic args, xray/3rd party/luajit-2/src/lib_string.c:837
 function dd_test.log_snapshot(note)
     local log = _get_logger()
     local actor = db.actor

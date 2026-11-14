@@ -179,8 +179,9 @@ later, EVENT (bumped by callbacks, decayed). A sensor's fields match what is use
 - `time` - "day" | "dusk" | "dawn" | "night" | "deep_night".
 - `stalkers` - one pass over the dedicated `db.OnlineStalkers` array (`_collect_stalkers`): `online` (any stalker online, the gunfire gate),
   `enemy_near` and `ally_near` (the strongest near hostile and the strongest near non-hostile, each a power tier,
-  where a neutral NPC counts as company because only a per-NPC enemy relation is a threat),
-  and `service_near` ("none"|"allied"|"hostile", a trader/medic/mechanic within 60m = a base).
+  where a neutral NPC counts as company because only a per-NPC enemy relation is a threat).
+  `service_near` reads none, allied or hostile. The nearest trader, barman, medic or mechanic within 60m marks a base.
+  It comes from `xsmart.find_base_owner`, which also sees Sidorovich and the Forester that the array never lists.
 - `monsters` - one pass over `xcreature.iterate_online_monsters` (`_collect_monsters`): a demonized `db.OnlineMonsters` id-array when present,
   else a best-effort `is_mutant` walk capped at `MONSTER_ITER_CAP` online objects so the scan stays bounded under soak (a monster past the cap is missed),
   where an engine-side monster registry is the parity fix: `online` (the mutant gate), `enemy_near` (strongest near monster as a power).
