@@ -16,6 +16,9 @@ The old model shipped our sounds as engine sound channels (`sound_channels.ltx` 
   It lives per-sound in `dd_spooks_metadata` (the business-metadata override, below). The deploy writes no `sound_channels.ltx` definitions for our content.
 - The director (`gamedata/scripts/dd_director.script`) plays each sound as a positioned single play through `xsound.play_at`, the vanilla `play_at_pos` call shape with a RETAINED handle
   that keeps every playing sound stoppable (`xsound.stop_shots`, the dev-tab Stop) and alive across GC. A long horror drone or a psy bed plays as one sound on a long period, with no loop and no bed.
+- Placement follows vanilla `sound_ambient.script`. `_compute_spawn_dist()` rolls `random(spawn_min, ch_max) / 2`, with `spawn_min` the row's `ch_min` underground and the band's midpoint above ground.
+  `play_sound()` pulls that distance closer by dread (`_compute_pull_dist()`), and `get_placement()` adds a random bearing and the row height. The volume is the sliders alone.
+  Only the base-game channels the director replays (`play_base_channel()`) take the vanilla `indoor` volume table.
 - The base's own copy of a sound we ship is removed from its ambient channels statically by a DLTX overlay at config load (the exclusion, below), so the base never doubles the director.
   A separate observer owns the vanilla `update_ambient` slot only to replay and log the base ambient.
 
