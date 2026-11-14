@@ -3,5 +3,5 @@
 MANIFEST = {
     name    = "DiegeticDread",
     version = "1.0.0-snapshot",
-    xlibs   = "1.8.5",
+    xlibs   = "1.9.2",
 }
