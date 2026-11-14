@@ -397,8 +397,8 @@ This slot (`sound_channels`/`update_ambient`) is separate from the director's ow
 
 ## Invariants
 
-- Performance first. Performance is the top priority and outranks features. A feature that cannot meet the budget is reworked or removed with an X-Ray engine modification,
-  never kept at the cost of the budget. Only correctness and never breaking base gameplay rank above it.
+- Performance first. Performance is the top priority and outranks features. A feature that cannot meet the budget moves its cost into the engine where the engine can carry it,
+  otherwise we rework or remove it. We never keep it at the cost of the budget. Only correctness and never breaking base gameplay rank above it.
 - Use the engine, don't work around it. Every capability comes from the engine and the Anomaly layer first, always through xlibs. Our own code enters only where stock behavior falls short.
 - I1 Play once, no loops. The director fires every sound once through `xsound.play_at` (retained handle, stoppable).
   There is no loop layer and no continuous bed. A long sound plays once, like any other.
@@ -443,6 +443,7 @@ Scripts add control, an in-game trace, and the MCM, mirroring the alife-family p
   or at-ear. It curates by LOGGING only and never moves or deletes a file. Fifteen one-word tag buttons in five labelled zones - type (outside, inside), level (low, med, high), vol (inaudible, faint, loud, painful), dist (close, far), fate (keep, cut, release, dupe) - and a custom free-text field write `[SOUND]` note lines,
   and a separate PROBE NOTE field writes a `[PROBE]` block with the full ordered sensor dump. Both go to `diegeticdread_notes.txt` (a clean, human-read notes file,
   distinct from the diagnostic `diegeticdread_probe.log`), written by `dd_test.log_sound_note` / `dd_test.log_probe_note`.
+  Nothing parses the notes. Curation is hand-edited code a human writes after reading them.
   Its loudness line reads a director mode at the farthest play, which sits at half the band max, pulled in by the mode's dread and lifted by the row height.
   The window owns the keyboard only so its text fields capture typing (a PDA-subdialog editbox never could). There are no command shortcuts,
   and a focused edit box is detected by the parent `OnKeyboard` return so it never doubles as a command. While the window is open the director is auto-silenced (`dd_director.set_muted`),
