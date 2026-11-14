@@ -1,4 +1,4 @@
-Version: 1.0.0-snapshot (xlibs 1.8.5, demonized latest)
+Version: 1.0.0-snapshot (xlibs 1.9.2, demonized latest)
 Changelog: https://github.com/damiansirbu-stalker/DiegeticDread/blob/main/doc/changelog
 Health: https://damiansirbu-stalker.github.io/DiegeticDread/health/
 JitProfiler: https://damiansirbu-stalker.github.io/DiegeticDread/jitprofiler/
